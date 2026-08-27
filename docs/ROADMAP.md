@@ -23,6 +23,7 @@
 - `docs/API_CONTRACT_V0.2.md`
 - `supabase/migrations/202608270001_initial_v02.sql`
 - `docs/releases/v0.2.0.md`
+- `docs/SUPABASE_SETUP.md`
 
 ## V0.3
 

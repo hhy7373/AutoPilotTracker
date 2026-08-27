@@ -63,3 +63,4 @@
 - Release Note 必须写清楚新增、改进、修复、数据/API 变更、隐私安全影响、验证结果和已知限制。
 - v0.2 的设计基线文件为 `docs/API_CONTRACT_V0.2.md` 与 `supabase/migrations/202608270001_initial_v02.sql`；尚未连接真实 Supabase 项目。
 - 前端云端适配已加入：配置 `.env.local` 后使用 Supabase 匿名会话；未配置时仍使用 `localStorage`。云端写入用 release/model slug 解析数据库 UUID，禁止客户端伪造审核状态。
+- Supabase 配置顺序固定为 `202608270001_initial_v02.sql` → `202608270002_seed_and_storage.sql`；前端配置说明见 `docs/SUPABASE_SETUP.md`。

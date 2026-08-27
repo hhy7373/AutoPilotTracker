@@ -26,8 +26,8 @@ export async function listPublicTrips({ brand, releaseId, page = 1, pageSize = 2
 
 export async function listReleases({ brand, page = 1, pageSize = 50 } = {}) {
   if (!supabase) return { data: [], count: 0, error: null, mode: 'local' };
-  let query = supabase.from('releases').select('*, systems!inner(brand,name)', { count: 'exact' });
-  if (brand && brand !== '全部系统') query = query.eq('systems.brand', brand);
+  let query = supabase.from('public_release_stats').select('*', { count: 'exact' });
+  if (brand && brand !== '全部系统') query = query.eq('brand', brand);
   const from = Math.max(0, (page - 1) * pageSize);
   const { data, count, error } = await query.range(from, from + pageSize - 1);
   return { data: data || [], count: count || 0, error, mode: 'cloud' };
@@ -41,10 +41,14 @@ export async function submitTrip({ trip, events = [], files = [] }) {
   if (releaseError) return { data: null, error: releaseError, mode: 'cloud' };
   const { data: vehicleModel, error: modelError } = await supabase.from('vehicle_models').select('id').eq('slug', trip.vehicleModelSlug).single();
   if (modelError) return { data: null, error: modelError, mode: 'cloud' };
-  const { data: vehicle, error: vehicleError } = await supabase.from('vehicle_profiles').insert({
+  const existingVehicle = await supabase.from('vehicle_profiles').select('id').eq('owner_id', session.user.id).eq('vin_hash', trip.vinHash).maybeSingle();
+  if (existingVehicle.error) return { data: null, error: existingVehicle.error, mode: 'cloud' };
+  const vehicleResult = existingVehicle.data ? existingVehicle : await supabase.from('vehicle_profiles').insert({
     vehicle_model_id: vehicleModel.id, owner_id: session.user.id,
     vin_hash: trip.vinHash, vin_last6: trip.vinLast6
   }).select('id').single();
+  const vehicle = vehicleResult.data;
+  const vehicleError = vehicleResult.error;
   if (vehicleError) return { data: null, error: vehicleError, mode: 'cloud' };
   const { data, error } = await supabase.from('trips').insert({
     author_id: session.user.id, release_id: release.id, vehicle_profile_id: vehicle.id,
@@ -63,11 +67,16 @@ export async function submitTrip({ trip, events = [], files = [] }) {
     const path = `${session.user.id}/${data.id}/${crypto.randomUUID()}-${file.name}`;
     const upload = await supabase.storage.from('trip-evidence').upload(path, file, { upsert: false, contentType: file.type });
     if (upload.error) return { data: null, error: upload.error, mode: 'cloud' };
-    evidence.push({ trip_id: data.id, storage_path: path, mime_type: file.type, byte_size: file.size, sha256: 'client-side-pending' });
+    evidence.push({ trip_id: data.id, storage_path: path, mime_type: file.type, byte_size: file.size, sha256: await sha256File(file) });
   }
   if (evidence.length) {
     const { error: evidenceError } = await supabase.from('evidence').insert(evidence);
     if (evidenceError) return { data: null, error: evidenceError, mode: 'cloud' };
   }
   return { data, error: null, mode: 'cloud' };
+}
+
+async function sha256File(file) {
+  const digest = await crypto.subtle.digest('SHA-256', await file.arrayBuffer());
+  return Array.from(new Uint8Array(digest)).map(byte => byte.toString(16).padStart(2, '0')).join('');
 }
