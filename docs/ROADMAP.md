@@ -16,6 +16,13 @@
 - 审核队列、证据上传、修改历史
 - 版本订阅和更新提醒
 - 可导出公开数据快照
+- Release Note 与数据库迁移必须随版本提交
+
+当前 v0.2 设计文件：
+
+- `docs/API_CONTRACT_V0.2.md`
+- `supabase/migrations/202608270001_initial_v02.sql`
+- `docs/releases/v0.2.0.md`
 
 ## V0.3
 
@@ -30,4 +37,3 @@
 - 统计置信区间和分层抽样
 - 开放数据字典与只读 API
 - 独立隐私、合规和安全审查
-
