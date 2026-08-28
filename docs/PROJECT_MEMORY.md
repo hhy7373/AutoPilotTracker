@@ -64,3 +64,5 @@
 - v0.2 的设计基线文件为 `docs/API_CONTRACT_V0.2.md` 与 `supabase/migrations/202608270001_initial_v02.sql`；尚未连接真实 Supabase 项目。
 - 前端云端适配已加入：配置 `.env.local` 后使用 Supabase 匿名会话；未配置时仍使用 `localStorage`。云端写入用 release/model slug 解析数据库 UUID，禁止客户端伪造审核状态。
 - Supabase 配置顺序固定为 `202608270001_initial_v02.sql` → `202608270002_seed_and_storage.sql`；前端配置说明见 `docs/SUPABASE_SETUP.md`。
+- v0.2.0 安全加固追加 `202608280003_security_invoker_views.sql`，公开视图不得绕过底层 RLS。
+- v0.2.1 追加 `202608280004_public_views_rls_fix.sql`：行程冗余保存车型关联，公开视图不再 join `vehicle_profiles`，避免为了公开行程而暴露 VIN 档案读取权限。

@@ -52,6 +52,7 @@ export async function submitTrip({ trip, events = [], files = [] }) {
   if (vehicleError) return { data: null, error: vehicleError, mode: 'cloud' };
   const { data, error } = await supabase.from('trips').insert({
     author_id: session.user.id, release_id: release.id, vehicle_profile_id: vehicle.id,
+    vehicle_model_id: vehicleModel.id,
     trip_date: trip.tripDate, total_km: trip.totalKm, road_type: trip.roadType, source: 'manual'
   }).select('id, verification_status, created_at').single();
   if (error) return { data: null, error, mode: 'cloud' };
