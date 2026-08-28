@@ -6,9 +6,23 @@ const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 export const isCloudConfigured = Boolean(url && anonKey && !url.includes('YOUR_PROJECT'));
 export const supabase = isCloudConfigured ? createClient(url, anonKey) : null;
 
+export function getSupabaseErrorMessage(error) {
+  const raw = String(error?.message || error || '').trim();
+  const normalized = raw.toLowerCase();
+  if (normalized.includes('anonymous sign-ins are disabled') || normalized.includes('anonymous_provider_disabled')) return '匿名投稿暂未开启，请稍后再试或联系管理员。';
+  if (normalized.includes('failed to fetch') || normalized.includes('networkerror') || normalized.includes('network error')) return '网络连接失败，请检查网络后重试。';
+  if (normalized.includes('invalid api key') || normalized.includes('unauthorized') || normalized.includes('jwt')) return '云端认证配置无效，请稍后再试或联系管理员。';
+  if (normalized.includes('row-level security') || normalized.includes('permission denied') || normalized.includes('not authorized')) return '当前身份没有执行该操作的权限，请稍后再试。';
+  if (normalized.includes('duplicate key') || normalized.includes('already exists')) return '这条记录可能已经提交，请刷新后确认。';
+  if (normalized.includes('storage') || normalized.includes('upload')) return '行程图片上传失败，请检查图片后重试。';
+  if (normalized.includes('violates') || normalized.includes('invalid input') || normalized.includes('check constraint')) return '提交内容不符合数据规范，请检查后重试。';
+  return '云端提交失败，请稍后重试。';
+}
+
 export async function ensureAnonymousSession() {
   if (!supabase) return { user: null, error: null, mode: 'local' };
   const current = await supabase.auth.getUser();
+  if (current.error) return { user: null, error: current.error, mode: 'cloud' };
   if (current.data.user) return { user: current.data.user, error: null, mode: 'cloud' };
   const { data, error } = await supabase.auth.signInAnonymously();
   return { user: data.user || null, error, mode: 'cloud' };

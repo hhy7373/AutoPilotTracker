@@ -2,7 +2,7 @@
 
 ## 1. 创建项目
 
-在 Supabase 创建项目后，打开 Authentication → Providers，启用 Anonymous Sign-Ins。匿名身份用于让没有注册账号的车主提交数据；后续可以再绑定邮箱或第三方账号。
+在 Supabase 创建项目后，打开 Authentication → Providers，启用 Anonymous Sign-Ins。匿名身份用于让没有注册账号的车主提交数据；后续可以再绑定邮箱或第三方账号。当前生产项目 `vcyrttqnliovmcgktljs` 已启用该开关。
 
 ## 2. 执行迁移
 
