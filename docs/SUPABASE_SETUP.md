@@ -12,6 +12,7 @@
 2. `supabase/migrations/202608270002_seed_and_storage.sql`
 3. `supabase/migrations/202608280003_security_invoker_views.sql`
 4. `supabase/migrations/202608280004_public_views_rls_fix.sql`
+5. `supabase/migrations/202608280005_public_detail_views.sql`
 
 第二个脚本会写入五类系统、示例版本、车型字典和私有 `trip-evidence` bucket。生产环境执行前应审查种子数据和 Storage policy。
 
@@ -35,3 +36,4 @@ VITE_SUPABASE_ANON_KEY=你的公开匿名访问密钥
 - 生产部署前还需增加文件大小/MIME 白名单、病毒扫描、EXIF 清除、限流和审核员角色策略。
 - 公开统计视图使用 `security_invoker=true`，必须保留底层表的最小 RLS；不要为了让视图返回数据而开放 VIN 或车辆档案表。
 - 公开视图通过 `trips.vehicle_model_id` 获取车型，不读取包含 VIN 哈希的 `vehicle_profiles`；已有数据需执行 v0.2.1 迁移回填该关联。
+- `public_trip_event_summary` 只返回公开行程的事件类型、场景和数量，不返回事件文字描述或驾驶员标识。

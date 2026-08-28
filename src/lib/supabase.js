@@ -14,13 +14,18 @@ export async function ensureAnonymousSession() {
   return { user: data.user || null, error, mode: 'cloud' };
 }
 
-export async function listPublicTrips({ brand, releaseId, page = 1, pageSize = 20 } = {}) {
+export async function listPublicTrips({ brand, releaseId, vehicleModelId, eventType, roadType, from, to, page = 1, pageSize = 20 } = {}) {
   if (!supabase) return { data: [], count: 0, error: null, mode: 'local' };
   let query = supabase.from('public_trips').select('*', { count: 'exact' });
   if (brand && brand !== '全部系统') query = query.eq('brand', brand);
   if (releaseId) query = query.eq('release_id', releaseId);
-  const from = Math.max(0, (page - 1) * pageSize);
-  const { data, count, error } = await query.range(from, from + pageSize - 1);
+  if (vehicleModelId) query = query.eq('vehicle_model_id', vehicleModelId);
+  if (eventType) query = query.contains('event_types', [eventType]);
+  if (roadType) query = query.eq('road_type', roadType);
+  if (from) query = query.gte('trip_date', from);
+  if (to) query = query.lte('trip_date', to);
+  const rangeStart = Math.max(0, (page - 1) * pageSize);
+  const { data, count, error } = await query.range(rangeStart, rangeStart + pageSize - 1);
   return { data: data || [], count: count || 0, error, mode: 'cloud' };
 }
 
@@ -31,6 +36,16 @@ export async function listReleases({ brand, page = 1, pageSize = 50 } = {}) {
   const from = Math.max(0, (page - 1) * pageSize);
   const { data, count, error } = await query.range(from, from + pageSize - 1);
   return { data: data || [], count: count || 0, error, mode: 'cloud' };
+}
+
+export async function getPublicTrip(tripId) {
+  if (!supabase) return { data: null, error: null, mode: 'local' };
+  return supabase.from('public_trips').select('*').eq('id', tripId).maybeSingle();
+}
+
+export async function listPublicTripEventSummary(tripId) {
+  if (!supabase) return { data: [], error: null, mode: 'local' };
+  return supabase.from('public_trip_event_summary').select('*').eq('trip_id', tripId).order('event_type').order('scene');
 }
 
 export async function submitTrip({ trip, events = [], files = [] }) {

@@ -66,3 +66,5 @@
 - Supabase 配置顺序固定为 `202608270001_initial_v02.sql` → `202608270002_seed_and_storage.sql`；前端配置说明见 `docs/SUPABASE_SETUP.md`。
 - v0.2.0 安全加固追加 `202608280003_security_invoker_views.sql`，公开视图不得绕过底层 RLS。
 - v0.2.1 追加 `202608280004_public_views_rls_fix.sql`：行程冗余保存车型关联，公开视图不再 join `vehicle_profiles`，避免为了公开行程而暴露 VIN 档案读取权限。
+- v0.2.3 增加 Hash 可分享路由、版本独立详情、公开行程筛选/分页/详情，以及 `202608280005_public_detail_views.sql`；公开行程详情只返回事件摘要和证据数量，不返回 VIN、作者标识、描述或 Storage 路径。
+- v0.2.3 云端模式严格只展示 Supabase 真实数据；无公开行程时显示空状态，不回退到本地演示数据。公开端已区分“Supabase 社区公开数据”和“本地演示模式”。
