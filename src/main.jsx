@@ -43,8 +43,8 @@ function App() {
   const [active, setActive] = useState('overview'); const [selectedBrand, setSelectedBrand] = useState('全部系统');
   const [selectedRelease, setSelectedRelease] = useState(null); const [trips, setTrips] = useState(readTrips);
   const [showForm, setShowForm] = useState(false); const [notice, setNotice] = useState(''); const [mobileNav, setMobileNav] = useState(false);
-  const [releaseRows, setReleaseRows] = useState(releases); const [cloudTrips, setCloudTrips] = useState(null);
-  useEffect(() => { if (!isCloudConfigured) return; Promise.all([listReleases(), listPublicTrips()]).then(([releaseResult, tripResult]) => { if (!releaseResult.error && releaseResult.data.length) setReleaseRows(releaseResult.data.map(normalizeRelease)); if (!tripResult.error) setCloudTrips(tripResult.data.map(normalizeCloudTrip)); }).catch(() => showNotice('云端数据读取失败，已保留本地数据')); }, []);
+  const [releaseRows, setReleaseRows] = useState(isCloudConfigured ? [] : releases); const [cloudTrips, setCloudTrips] = useState(isCloudConfigured ? [] : null);
+  useEffect(() => { if (!isCloudConfigured) return; Promise.all([listReleases(), listPublicTrips()]).then(([releaseResult, tripResult]) => { if (releaseResult.error || tripResult.error) { showNotice('云端数据读取失败，请稍后重试'); return; } setReleaseRows(releaseResult.data.map(normalizeRelease)); setCloudTrips(tripResult.data.map(normalizeCloudTrip)); }).catch(() => showNotice('云端数据读取失败，请稍后重试')); }, []);
   const filtered = useMemo(() => selectedBrand === '全部系统' ? releaseRows : releaseRows.filter(r => r.brand === selectedBrand), [selectedBrand, releaseRows]);
   const totals = useMemo(() => { const km = filtered.reduce((s, r) => s + r.km, 0); const count = filtered.reduce((s, r) => s + r.trips, 0); return { km, trips: count, cars: filtered.reduce((s, r) => s + r.cars, 0), safety: filtered.reduce((s, r) => s + r.safety * r.km, 0) / Math.max(km, 1), noEvent: Math.round(filtered.reduce((s, r) => s + r.noEvent * r.trips, 0) / Math.max(count, 1)) }; }, [filtered]);
   function showNotice(message) { setNotice(message); window.setTimeout(() => setNotice(''), 3200); }
