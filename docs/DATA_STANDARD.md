@@ -49,4 +49,3 @@ VehicleProfile -> Trip -> Event -> Evidence
 ## 5. 数据质量
 
 每条数据带有 `verificationStatus`、`evidenceLevel`、`source`、`createdAt` 和 `updatedAt`。后端上线后增加去重哈希、审核日志、提交频率限制和举报流程。
-

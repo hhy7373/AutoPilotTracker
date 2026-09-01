@@ -73,3 +73,6 @@
 - v0.2.4 暂不包含验证码、服务端幂等或新的防滥用系统，后续需要补充匿名投稿限流与异常检测。
 - 2026-09-01 已部署到阿里云 ECS（Alibaba Cloud Linux 4），公网地址为 `http://8.138.251.200/`；Nginx 站点目录为 `/var/www/autopilotlog`，配置文件为 `/etc/nginx/conf.d/00-autopilotlog.conf`，Nginx 已设置开机自启。
 - 阿里云部署记录见 `docs/DEPLOYMENT_ALIYUN.md`；更新流程为本地 `npm run build` 后上传 `dist/`，不上传 `.env.local`、源代码或 SSH 私钥。
+- v0.3.0 增加八类对象的目录种子与分类：华为、小鹏、理想、蔚来为车企系统；地平线、卓驭、元戎启行、文远知行为技术提供方/方案商。新目录记录带来源 URL、来源类型、核验日期和草稿/核验状态；部分技术方案资料仍必须人工核验。
+- v0.3.0 增加 VIN 格式/校验位/测试 VIN 与单次 5000 km 上限校验，并补全方法章节 Hash 路由和系统字典页面。
+- v0.3.0 采用浅色 Apple 风格和移动优先 CSS；业务数据库仍在 Supabase，阿里云 ECS 当前只承载静态站点。
