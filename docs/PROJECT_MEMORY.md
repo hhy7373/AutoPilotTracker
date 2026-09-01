@@ -71,3 +71,5 @@
 - v0.2.4 已在 Supabase 项目 `vcyrttqnliovmcgktljs` 开启 Anonymous Sign-Ins；匿名用户通过现有 RLS 只能创建和读取自己的车辆档案、行程、事件和证据，投稿默认保持 `unverified`。
 - v0.2.4 前端提交失败会保留表单和图片预览，显示中文错误并允许用户手动重试；不自动重试，避免产生重复投稿。
 - v0.2.4 暂不包含验证码、服务端幂等或新的防滥用系统，后续需要补充匿名投稿限流与异常检测。
+- 2026-09-01 已部署到阿里云 ECS（Alibaba Cloud Linux 4），公网地址为 `http://8.138.251.200/`；Nginx 站点目录为 `/var/www/autopilotlog`，配置文件为 `/etc/nginx/conf.d/00-autopilotlog.conf`，Nginx 已设置开机自启。
+- 阿里云部署记录见 `docs/DEPLOYMENT_ALIYUN.md`；更新流程为本地 `npm run build` 后上传 `dist/`，不上传 `.env.local`、源代码或 SSH 私钥。
