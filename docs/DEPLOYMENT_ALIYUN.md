@@ -38,6 +38,12 @@ Invoke-WebRequest http://8.138.251.200/ -UseBasicParsing
 - 首页、JS 和 CSS 从公网返回 HTTP 200。
 - Hash 路由由前端处理，不需要额外的 Nginx 重写规则。
 
+## API 服务（v0.4）
+
+API 服务使用 `server/index.mjs`，默认监听 `127.0.0.1:3001`。生产环境需要在服务器设置 `SUPABASE_URL`、`SUPABASE_ANON_KEY`，再使用 systemd 启动 API，并在 Nginx 增加 `/api/` 到 `127.0.0.1:3001` 的反向代理。
+
+开启 API 前必须先在 Supabase SQL Editor 审查并执行 `202609010002_v04_community_and_personal.sql`。管理员功能需要给指定 Supabase 用户设置 `app_metadata.role=admin`，不得把高权限密钥放入前端。
+
 ## 后续建议
 
 - 配置域名并申请 HTTPS 证书。
