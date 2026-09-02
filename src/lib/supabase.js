@@ -9,6 +9,7 @@ export const supabase = isCloudConfigured ? createClient(url, anonKey) : null;
 export function getSupabaseErrorMessage(error) {
   const raw = String(error?.message || error || '').trim();
   const normalized = raw.toLowerCase();
+  if (/^[^a-z]*[\u4e00-\u9fff]/.test(raw) && !normalized.includes('anonymous sign-ins are disabled')) return raw;
   if (normalized.includes('anonymous sign-ins are disabled') || normalized.includes('anonymous_provider_disabled')) return '匿名投稿暂未开启，请稍后再试或联系管理员。';
   if (normalized.includes('failed to fetch') || normalized.includes('networkerror') || normalized.includes('network error')) return '网络连接失败，请检查网络后重试。';
   if (normalized.includes('invalid api key') || normalized.includes('unauthorized') || normalized.includes('jwt')) return '云端认证配置无效，请稍后再试或联系管理员。';
@@ -21,9 +22,9 @@ export function getSupabaseErrorMessage(error) {
 
 export async function ensureAnonymousSession() {
   if (!supabase) return { user: null, error: null, mode: 'local' };
-  const current = await supabase.auth.getUser();
+  const current = await supabase.auth.getSession();
   if (current.error) return { user: null, error: current.error, mode: 'cloud' };
-  if (current.data.user) return { user: current.data.user, error: null, mode: 'cloud' };
+  if (current.data.session?.user) return { user: current.data.session.user, error: null, mode: 'cloud' };
   const { data, error } = await supabase.auth.signInAnonymously();
   return { user: data.user || null, error, mode: 'cloud' };
 }

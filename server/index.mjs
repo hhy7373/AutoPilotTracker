@@ -44,6 +44,12 @@ function adminClient(request, reply) {
 function publicTrip(row) { return { id: row.id, releaseId: row.release_id, brand: row.brand, system: row.system_name, version: row.version, hardware: row.hardware, vehicle: row.vehicle_model, trim: row.trim_name, date: row.trip_date, km: row.total_km, road: row.road_type, events: row.event_count, eventTypes: row.event_types, evidenceCount: row.evidence_count, verificationStatus: row.verification_status }; }
 function vinFingerprint(vin) { return createHash('sha256').update(vin).digest('hex'); }
 function parseTripBody(body) {
+  const hashedVin = cleanText(body.vinHash, 128).toLowerCase();
+  if (!body.vin && /^[a-f0-9]{64}$/.test(hashedVin)) {
+    const km = Number(body.totalKm);
+    if (!Number.isFinite(km) || km <= 0 || km > 5000 || Math.round(km * 100) !== km * 100) return { error: '行驶里程必须大于 0、不超过 5000 km，且最多保留两位小数。' };
+    return { value: { ...body, vinHash: hashedVin, vinLast6: cleanText(body.vinLast6, 6) || null, totalKm: km } };
+  }
   const vinResult = validateVin(body.vin || '', { allowTestVin: Boolean(body.isTest) });
   if (!vinResult.valid) return { error: vinResult.message };
   const km = Number(body.totalKm);
