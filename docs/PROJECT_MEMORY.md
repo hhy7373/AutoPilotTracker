@@ -93,3 +93,4 @@
 - v0.4.1 管理员目录维护支持关联来源证据后再发布系统、版本和车型；管理员审核队列可请求 300 秒私有证据签名链接，公开接口仍不返回 Storage 原始路径。生产迁移执行顺序为 `202609100001_v041_catalog_review_and_admin.sql` → `202609100002_v041_public_catalog_views.sql`。
 - v0.4.1 本地验证已通过 `npm run build`、`npm run api:check`、`git diff --check`；生产 Supabase 迁移仍需在 SQL Editor 执行后才能完成线上目录与审核闭环。
 - v0.4.1 研究记录保存在 `docs/CATALOG_RESEARCH_V041.md`；官方入口只能证明系统/产品/车型存在，不能自动证明具体 OTA 版本、发布日期、硬件或配置，缺少精确原文的记录必须保持草稿。
+- 线上诊断：若 `/api/catalog/vehicles` 返回“车型目录尚未完成 v0.4.1 数据库迁移”，说明生产库尚未增加 `vehicle_brand` 字段，需先执行两份 v0.4.1 迁移。

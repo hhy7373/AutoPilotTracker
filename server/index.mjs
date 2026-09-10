@@ -99,7 +99,10 @@ app.get('/api/catalog/releases', async (request, reply) => {
   if (sourceResult.error) return reply.code(502).send({ error: '来源目录暂时无法读取。' });
   const sourceMap = new Map(sourceResult.sources.map(source => [source.id, source]));
   const systemQuery = await supabase.from('systems').select('id').in('catalog_status', ['reviewed', 'published']).in('primary_source_id', sourceResult.ids.length ? sourceResult.ids : ['00000000-0000-0000-0000-000000000000']);
-  if (systemQuery.error) return reply.code(502).send({ error: '系统目录暂时无法读取。' });
+  if (systemQuery.error) {
+    const message = /vehicle_brand|column .* does not exist/i.test(systemQuery.error.message || '') ? '车型目录尚未完成 v0.4.1 数据库迁移，请先执行迁移脚本。' : '系统目录暂时无法读取。';
+    return reply.code(502).send({ error: message });
+  }
   const publicSystemIds = (systemQuery.data || []).map(row => row.id);
   let query = supabase.from('releases').select('id, system_id, slug, version, hardware, release_type, released_at, catalog_status, primary_source_id').eq('verification_status', 'verified').in('catalog_status', ['reviewed', 'published']).in('system_id', publicSystemIds.length ? publicSystemIds : ['00000000-0000-0000-0000-000000000000']).in('primary_source_id', sourceResult.ids.length ? sourceResult.ids : ['00000000-0000-0000-0000-000000000000']).order('released_at', { ascending: false });
   if (request.query?.systemId) query = query.eq('system_id', request.query.systemId);
@@ -119,7 +122,10 @@ app.get('/api/catalog/vehicles', async (request, reply) => {
   let query = supabase.from('vehicle_models').select('id, system_id, slug, vehicle_brand, name, trim_name, hardware, model_year, catalog_status, primary_source_id').in('system_id', publicSystemIds.length ? publicSystemIds : ['00000000-0000-0000-0000-000000000000']).in('catalog_status', ['reviewed', 'published']).in('primary_source_id', sourceResult.ids.length ? sourceResult.ids : ['00000000-0000-0000-0000-000000000000']).order('name');
   if (request.query?.systemId) query = query.eq('system_id', request.query.systemId);
   const { data, error } = await query;
-  if (error) return reply.code(502).send({ error: '车型目录暂时无法读取。' });
+  if (error) {
+    const message = /vehicle_brand|column .* does not exist/i.test(error.message || '') ? '车型目录尚未完成 v0.4.1 数据库迁移，请先执行迁移脚本。' : '车型目录暂时无法读取。';
+    return reply.code(502).send({ error: message });
+  }
   return { data: (data || []).map(row => withCatalogSource(row, sourceMap)) };
 });
 
