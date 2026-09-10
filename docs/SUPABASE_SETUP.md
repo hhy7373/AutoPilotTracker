@@ -13,8 +13,11 @@
 3. `supabase/migrations/202608280003_security_invoker_views.sql`
 4. `supabase/migrations/202608280004_public_views_rls_fix.sql`
 5. `supabase/migrations/202608280005_public_detail_views.sql`
+6. `supabase/migrations/202609010001_catalog_sources.sql`
+7. `supabase/migrations/202609010002_v04_community_and_personal.sql`
+8. `supabase/migrations/202609090001_v032_catalog_review.sql`
 
-第二个脚本会写入五类系统、示例版本、车型字典和私有 `trip-evidence` bucket。生产环境执行前应审查种子数据和 Storage policy。
+第二个脚本会写入五类系统、示例版本、车型字典和私有 `trip-evidence` bucket。生产环境执行前应审查种子数据和 Storage policy。最后一条迁移只将已存在来源基础且版本状态为 `verified` 的车企目录标记为 `reviewed`；地平线、卓驭、元戎启行和文远知行等技术方案仍保持草稿，待人工核验后再发布。
 
 ## 3. 配置前端
 
