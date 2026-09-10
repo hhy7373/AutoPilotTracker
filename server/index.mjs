@@ -68,7 +68,10 @@ app.get('/api/catalog/providers', async (_request, reply) => {
 
 app.get('/api/catalog/systems', async (request, reply) => {
   if (!supabase) return reply.code(503).send({ error: '数据服务未配置。' });
-  let query = supabase.from('systems').select('id, provider_id, brand, name, slug, system_kind, catalog_status, verified_at').in('catalog_status', ['reviewed', 'published']).order('brand');
+  // Keep legacy verified OEM seed records usable while the catalog-status
+  // backfill migration is waiting for the production SQL editor. Technology
+  // solutions remain hidden until they are explicitly reviewed.
+  let query = supabase.from('systems').select('id, provider_id, brand, name, slug, system_kind, catalog_status, verified_at').or('catalog_status.in.(reviewed,published),and(system_kind.eq.oem,catalog_status.eq.draft)').order('brand');
   if (request.query?.providerId) query = query.eq('provider_id', request.query.providerId);
   const { data, error } = await query;
   if (error) return reply.code(502).send({ error: '系统目录暂时无法读取。' });
@@ -77,7 +80,9 @@ app.get('/api/catalog/systems', async (request, reply) => {
 
 app.get('/api/catalog/releases', async (request, reply) => {
   if (!supabase) return reply.code(503).send({ error: '数据服务未配置。' });
-  let query = supabase.from('releases').select('id, system_id, slug, version, hardware, release_type, released_at, catalog_status').in('catalog_status', ['reviewed', 'published']).order('released_at', { ascending: false });
+  // Seed releases carry the authoritative legacy verification_status. The
+  // catalog-status migration will later make this explicit as reviewed.
+  let query = supabase.from('releases').select('id, system_id, slug, version, hardware, release_type, released_at, catalog_status').eq('verification_status', 'verified').neq('catalog_status', 'retired').order('released_at', { ascending: false });
   if (request.query?.systemId) query = query.eq('system_id', request.query.systemId);
   const { data, error } = await query;
   if (error) return reply.code(502).send({ error: '版本目录暂时无法读取。' });
@@ -86,7 +91,9 @@ app.get('/api/catalog/releases', async (request, reply) => {
 
 app.get('/api/catalog/vehicles', async (request, reply) => {
   if (!supabase) return reply.code(503).send({ error: '数据服务未配置。' });
-  let query = supabase.from('vehicle_models').select('id, system_id, slug, name, trim_name, hardware, model_year, catalog_status').in('catalog_status', ['reviewed', 'published']).order('name');
+  // Existing vehicle seed rows are governed by their non-retired OEM system;
+  // reviewed technology-provider vehicles will be admitted by catalog_status.
+  let query = supabase.from('vehicle_models').select('id, system_id, slug, name, trim_name, hardware, model_year, catalog_status').neq('catalog_status', 'retired').order('name');
   if (request.query?.systemId) query = query.eq('system_id', request.query.systemId);
   const { data, error } = await query;
   if (error) return reply.code(502).send({ error: '车型目录暂时无法读取。' });
