@@ -41,9 +41,13 @@ function adminClient(request, reply) {
   if (!request.supabase) { reply.code(503).send({ error: '管理员数据服务未配置。' }); return null; }
   return request.supabase;
 }
-async function verifiedSourceIds(client) {
-  const { data, error } = await client.from('catalog_sources').select('id').in('verification_status', ['reviewed', 'published']);
-  return { ids: (data || []).map(row => row.id), error };
+async function verifiedSources(client) {
+  const { data, error } = await client.from('catalog_sources').select('id, source_type, title, url, published_at, checked_at, excerpt, verification_status').in('verification_status', ['reviewed', 'published']);
+  return { sources: data || [], ids: (data || []).map(row => row.id), error };
+}
+function withCatalogSource(row, sourceMap) {
+  const source = row.primary_source_id ? sourceMap.get(row.primary_source_id) : null;
+  return { ...row, source: source || null };
 }
 function publicTrip(row) { return { id: row.id, releaseId: row.release_id, brand: row.brand, system: row.system_name, version: row.version, hardware: row.hardware, vehicle: row.vehicle_model, trim: row.trim_name, date: row.trip_date, km: row.total_km, road: row.road_type, events: row.event_count, eventTypes: row.event_types, evidenceCount: row.evidence_count, verificationStatus: row.verification_status }; }
 function vinFingerprint(vin) { return createHash('sha256').update(vin).digest('hex'); }
@@ -79,19 +83,21 @@ app.get('/api/catalog/sources', async (_request, reply) => {
 
 app.get('/api/catalog/systems', async (request, reply) => {
   if (!supabase) return reply.code(503).send({ error: '数据服务未配置。' });
-  const sourceResult = await verifiedSourceIds(supabase);
+  const sourceResult = await verifiedSources(supabase);
   if (sourceResult.error) return reply.code(502).send({ error: '来源目录暂时无法读取。' });
+  const sourceMap = new Map(sourceResult.sources.map(source => [source.id, source]));
   let query = supabase.from('systems').select('id, provider_id, brand, name, slug, system_kind, catalog_status, verified_at, primary_source_id').in('catalog_status', ['reviewed', 'published']).in('primary_source_id', sourceResult.ids.length ? sourceResult.ids : ['00000000-0000-0000-0000-000000000000']).order('brand');
   if (request.query?.providerId) query = query.eq('provider_id', request.query.providerId);
   const { data, error } = await query;
   if (error) return reply.code(502).send({ error: '系统目录暂时无法读取。' });
-  return { data: data || [] };
+  return { data: (data || []).map(row => withCatalogSource(row, sourceMap)) };
 });
 
 app.get('/api/catalog/releases', async (request, reply) => {
   if (!supabase) return reply.code(503).send({ error: '数据服务未配置。' });
-  const sourceResult = await verifiedSourceIds(supabase);
+  const sourceResult = await verifiedSources(supabase);
   if (sourceResult.error) return reply.code(502).send({ error: '来源目录暂时无法读取。' });
+  const sourceMap = new Map(sourceResult.sources.map(source => [source.id, source]));
   const systemQuery = await supabase.from('systems').select('id').in('catalog_status', ['reviewed', 'published']).in('primary_source_id', sourceResult.ids.length ? sourceResult.ids : ['00000000-0000-0000-0000-000000000000']);
   if (systemQuery.error) return reply.code(502).send({ error: '系统目录暂时无法读取。' });
   const publicSystemIds = (systemQuery.data || []).map(row => row.id);
@@ -99,13 +105,14 @@ app.get('/api/catalog/releases', async (request, reply) => {
   if (request.query?.systemId) query = query.eq('system_id', request.query.systemId);
   const { data, error } = await query;
   if (error) return reply.code(502).send({ error: '版本目录暂时无法读取。' });
-  return { data };
+  return { data: (data || []).map(row => withCatalogSource(row, sourceMap)) };
 });
 
 app.get('/api/catalog/vehicles', async (request, reply) => {
   if (!supabase) return reply.code(503).send({ error: '数据服务未配置。' });
-  const sourceResult = await verifiedSourceIds(supabase);
+  const sourceResult = await verifiedSources(supabase);
   if (sourceResult.error) return reply.code(502).send({ error: '来源目录暂时无法读取。' });
+  const sourceMap = new Map(sourceResult.sources.map(source => [source.id, source]));
   const systemQuery = await supabase.from('systems').select('id').in('catalog_status', ['reviewed', 'published']).in('primary_source_id', sourceResult.ids.length ? sourceResult.ids : ['00000000-0000-0000-0000-000000000000']);
   if (systemQuery.error) return reply.code(502).send({ error: '系统目录暂时无法读取。' });
   const publicSystemIds = (systemQuery.data || []).map(row => row.id);
@@ -113,7 +120,7 @@ app.get('/api/catalog/vehicles', async (request, reply) => {
   if (request.query?.systemId) query = query.eq('system_id', request.query.systemId);
   const { data, error } = await query;
   if (error) return reply.code(502).send({ error: '车型目录暂时无法读取。' });
-  return { data: data || [] };
+  return { data: (data || []).map(row => withCatalogSource(row, sourceMap)) };
 });
 
 app.get('/api/trips', async (request, reply) => {
