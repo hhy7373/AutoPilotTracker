@@ -31,6 +31,16 @@ ssh -i C:\Users\ADAS_TEST_PC\Desktop\codex.pem root@8.138.251.200 "nginx -t && s
 Invoke-WebRequest http://8.138.251.200/ -UseBasicParsing
 ```
 
+生产验收可执行：
+
+```powershell
+$env:VITE_SUPABASE_URL = "你的 Supabase URL"
+$env:VITE_SUPABASE_ANON_KEY = "你的公开 anon/publishable key"
+npm run verify:production
+```
+
+该命令只读取公开 schema 和目录接口，不输出密钥；迁移完成后应全部显示 `PASS`。
+
 ## 当前验证
 
 - Nginx 配置测试通过。

@@ -8,7 +8,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "api": "node server/index.mjs",
-    "api:check": "node --check server/index.mjs"
+    "api:check": "node --check server/index.mjs",
+    "verify:production": "node scripts/verify-production.mjs"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "latest",

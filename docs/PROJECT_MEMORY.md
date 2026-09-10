@@ -94,3 +94,5 @@
 - v0.4.1 本地验证已通过 `npm run build`、`npm run api:check`、`git diff --check`；生产 Supabase 迁移仍需在 SQL Editor 执行后才能完成线上目录与审核闭环。
 - v0.4.1 研究记录保存在 `docs/CATALOG_RESEARCH_V041.md`；官方入口只能证明系统/产品/车型存在，不能自动证明具体 OTA 版本、发布日期、硬件或配置，缺少精确原文的记录必须保持草稿。
 - 线上诊断：若 `/api/catalog/vehicles` 返回“车型目录尚未完成 v0.4.1 数据库迁移”，说明生产库尚未增加 `vehicle_brand` 字段，需先执行两份 v0.4.1 迁移。
+- 迁移后验收命令为 `npm run verify:production`；它只读取 API 和 Supabase schema，不输出密钥，全部 PASS 后才能继续管理员和投稿闭环验收。
+- 当前验收证据：`vehicle_models.vehicle_brand` 和 `system_vehicle_compatibility` 在生产 Supabase 中不存在；来源表和 `public_release_stats` 存在，API 健康及公开行程隐私检查通过。目标仍未完成。
