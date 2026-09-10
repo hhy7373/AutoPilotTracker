@@ -46,9 +46,9 @@ API 服务使用 `server/index.mjs`，默认监听 `127.0.0.1:3001`。生产环�
 
 ## API 服务（v0.4.1）
 
-发布 v0.4.1 时还需要执行 `202609100001_v041_catalog_review_and_admin.sql`。该迁移新增来源追踪字段、系统/车型/版本搭载关系和管理员查看私有证据的 RLS 策略。执行前先确认 v0.3.2 目录迁移已完成；若 SQL Editor 会话失效，应重新登录 Supabase 控制台后再执行，不能跳过生产数据库迁移。
+发布 v0.4.1 时还需要依次执行 `202609100001_v041_catalog_review_and_admin.sql`、`202609100002_v041_public_catalog_views.sql`。第一份迁移新增来源追踪字段、系统/车型/版本搭载关系、车型品牌字段和管理员查看私有证据的 RLS 策略；第二份迁移收紧公开版本统计视图，只允许有已核验来源的系统和版本进入公开统计。执行前先确认 v0.3.2 目录迁移已完成；若 SQL Editor 会话失效，应重新登录 Supabase 控制台后再执行，不能跳过生产数据库迁移。
 
-管理员账号必须由 Supabase Auth 创建，并在 `app_metadata` 设置 `role=admin`。前端 `#/admin` 支持密码登录或 Magic Link；普通用户会得到权限拒绝，不会看到审核数据。部署后用管理员账号访问 `http://autopilottrack.cn/#/admin`，默认选择 `Unverified · 待审核`，确认能看到测试行程后再发布真实投稿。
+管理员账号必须由 Supabase Auth 创建，并在 `app_metadata` 设置 `role=admin`。前端 `#/admin` 支持密码登录或 Magic Link；普通用户会得到权限拒绝，不会看到审核数据。部署后用管理员账号访问 `http://autopilottrack.cn/#/admin`，默认选择 `Unverified · 待审核`，确认能看到测试行程后再发布真实投稿。迁移未执行时，线上投稿入口会保持禁用，不会把旧草稿目录当作可投稿数据。
 
 更新 API 时：
 
