@@ -8,7 +8,7 @@
 
 ## 当前阶段
 
-- 阶段：第一版 MVP
+- 阶段：v0.4.1 管理审核与可追溯数据字典
 - 日期：2026-08-27
 - 仓库：GitHub `hhy7373/ChinaFSDTracker`，当前开发分支为 `codex/initial-mvp`
 - 后端：Supabase 已建立并用于公开数据与匿名投稿
@@ -84,3 +84,8 @@
 - 2026-09-10 ECS API 已重启并验证健康检查、系统、版本和车型目录接口；生产环境变量仅保存在 `/etc/autopilotlog-api.env`，未进入仓库或前端构建。
 - v0.4.0 已加入 Fastify API、Supabase Auth JWT、个人记录、邮箱绑定入口、匿名社区帖子/评论/举报和管理员审核接口；API 契约见 `docs/API_CONTRACT_V0.3.md`。
 - v0.4.0 服务端投稿支持 VIN/里程校验、幂等键和图片 multipart 上传；阿里云 API 生产部署仍需配置服务器环境变量和 Nginx `/api` 代理。
+- v0.4.1 增加 `system_vehicle_compatibility` 搭载关系、来源优先级/冲突备注/核验人字段和官方入口来源种子；官方入口登记不等于具体版本已核验，未补充原文证据的记录继续保持草稿。
+- v0.4.1 增加管理员邮箱密码/Magic Link 登录入口；管理员由 Supabase JWT `app_metadata.role=admin` 唯一判断，普通用户即使登录也不能进入审核队列。
+- v0.4.1 管理后台默认显示 `unverified` 行程，审核队列展示版本、车型配置、道路、人工干预和证据数量；管理员查看图片只能通过 300 秒私有签名链接，公开响应不返回 Storage 路径。
+- v0.4.1 新增迁移 `202609100001_v041_catalog_review_and_admin.sql`、数据政策 `docs/CATALOG_DATA_POLICY.md` 和 Release Note；迁移需在 Supabase SQL Editor 执行后才能启用搭载关系和管理员证据读取策略。
+- 当前仍需完成：在 Supabase 设置管理员账号的 `app_metadata.role=admin`，执行 v0.4.1 迁移，逐条补充真实 OTA/车型公告来源，并重新部署 ECS API 与静态前端。当前公网仍为 HTTP，登录和证据查看应待 HTTPS 配置后使用。

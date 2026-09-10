@@ -6,6 +6,29 @@ const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 export const isCloudConfigured = Boolean(url && anonKey && !url.includes('YOUR_PROJECT'));
 export const supabase = isCloudConfigured ? createClient(url, anonKey) : null;
 
+export async function getCurrentSession() {
+  if (!supabase) return { session: null, user: null, error: null };
+  const { data, error } = await supabase.auth.getSession();
+  return { session: data?.session || null, user: data?.session?.user || null, error };
+}
+
+export async function signInAdmin({ email, password }) {
+  if (!supabase) return { data: null, error: new Error('认证服务未配置。') };
+  const cleanEmail = String(email || '').trim();
+  if (!cleanEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) return { data: null, error: new Error('请输入有效的管理员邮箱。') };
+  if (!password) {
+    const { data, error } = await supabase.auth.signInWithOtp({ email: cleanEmail, options: { emailRedirectTo: window.location.origin } });
+    return { data, error, magicLink: true };
+  }
+  const { data, error } = await supabase.auth.signInWithPassword({ email: cleanEmail, password });
+  return { data, error, magicLink: false };
+}
+
+export async function signOut() {
+  if (supabase) return supabase.auth.signOut();
+  return { error: null };
+}
+
 export function getSupabaseErrorMessage(error) {
   const raw = String(error?.message || error || '').trim();
   const normalized = raw.toLowerCase();

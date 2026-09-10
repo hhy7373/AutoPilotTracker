@@ -14,7 +14,7 @@ async function authHeaders() {
   return { Authorization: `Bearer ${data.session.access_token}` };
 }
 
-export const isApiConfigured = Boolean(import.meta.env.VITE_API_BASE_URL) || (typeof window !== 'undefined' && window.location.hostname === '8.138.251.200');
+export const isApiConfigured = Boolean(import.meta.env.VITE_API_BASE_URL) || (typeof window !== 'undefined' && (window.location.hostname === '8.138.251.200' || window.location.hostname.endsWith('autopilottrack.cn')));
 function createIdempotencyKey() {
   if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
   return `trip-${Date.now()}-${Math.random().toString(36).slice(2, 12)}`;
@@ -41,6 +41,11 @@ async function uploadRequest(path, fields, files = [], options = {}) {
 
 export const api = {
   health: () => request('/health'),
+  listCatalogProviders: () => request('/catalog/providers'),
+  listCatalogSources: () => request('/catalog/sources'),
+  listCatalogSystems: providerId => request(`/catalog/systems${providerId ? `?providerId=${encodeURIComponent(providerId)}` : ''}`),
+  listCatalogReleases: systemId => request(`/catalog/releases${systemId ? `?systemId=${encodeURIComponent(systemId)}` : ''}`),
+  listCatalogVehicles: systemId => request(`/catalog/vehicles${systemId ? `?systemId=${encodeURIComponent(systemId)}` : ''}`),
   listPosts: () => request('/community/posts'),
   getPost: id => request(`/community/posts/${encodeURIComponent(id)}`),
   createPost: body => request('/community/posts', { method: 'POST', body: JSON.stringify(body) }, { auth: true }),
@@ -52,7 +57,8 @@ export const api = {
   linkEmail: email => request('/me/link-email', { method: 'POST', body: JSON.stringify({ email }) }, { auth: true }),
   listAdminCatalog: () => request('/admin/catalog', {}, { auth: true }),
   updateAdminCatalog: (type, id, body) => request(`/admin/catalog/${type}/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(body) }, { auth: true }),
-  listAdminSubmissions: () => request('/admin/submissions', {}, { auth: true }),
+  listAdminSubmissions: (status = 'unverified') => request(`/admin/submissions${status ? `?status=${encodeURIComponent(status)}` : ''}`, {}, { auth: true }),
+  listAdminSubmissionEvidence: id => request(`/admin/submissions/${encodeURIComponent(id)}/evidence`, {}, { auth: true }),
   updateAdminSubmission: (id, verificationStatus) => request(`/admin/submissions/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify({ verificationStatus }) }, { auth: true }),
   hidePost: id => request(`/admin/posts/${encodeURIComponent(id)}/hide`, { method: 'POST' }, { auth: true }),
   listAdminReports: () => request('/admin/reports', {}, { auth: true }),

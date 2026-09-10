@@ -49,10 +49,11 @@ POST /api/community/comments/:id/reports
 GET   /api/admin/catalog
 PATCH /api/admin/catalog/:type/:id
 GET   /api/admin/submissions
+GET   /api/admin/submissions/:id/evidence
 PATCH /api/admin/submissions/:id
 POST  /api/admin/posts/:id/hide
 GET   /api/admin/reports
 GET   /api/admin/audit-logs
 ```
 
-管理员修改目录、审核投稿和隐藏帖子必须写入审计日志。普通用户不能修改审核状态、作者 ID、统计字段或目录校验状态。
+管理员修改目录、审核投稿和隐藏帖子必须写入审计日志。普通用户不能修改审核状态、作者 ID、统计字段或目录校验状态。审核队列默认筛选 `unverified`，证据接口只向管理员返回短时签名链接。
