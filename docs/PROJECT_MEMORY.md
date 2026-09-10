@@ -89,3 +89,6 @@
 - v0.4.1 管理后台默认显示 `unverified` 行程，审核队列展示版本、车型配置、道路、人工干预和证据数量；管理员查看图片只能通过 300 秒私有签名链接，公开响应不返回 Storage 路径。
 - v0.4.1 新增迁移 `202609100001_v041_catalog_review_and_admin.sql`、数据政策 `docs/CATALOG_DATA_POLICY.md` 和 Release Note；迁移需在 Supabase SQL Editor 执行后才能启用搭载关系和管理员证据读取策略。
 - 当前仍需完成：在 Supabase 设置管理员账号的 `app_metadata.role=admin`，执行 v0.4.1 迁移，逐条补充真实 OTA/车型公告来源，并重新部署 ECS API 与静态前端。当前公网仍为 HTTP，登录和证据查看应待 HTTPS 配置后使用。
+- v0.4.1 当前代码状态：投稿表单从云端已核验目录读取系统、车辆品牌、车型配置和版本；云端公开系统/版本/车型接口要求目录状态为 `reviewed/published`、存在已核验来源，投稿接口再次校验版本与车型属于同一系统。
+- v0.4.1 管理员目录维护支持关联来源证据后再发布系统、版本和车型；管理员审核队列可请求 300 秒私有证据签名链接，公开接口仍不返回 Storage 原始路径。生产迁移执行顺序为 `202609100001_v041_catalog_review_and_admin.sql` → `202609100002_v041_public_catalog_views.sql`。
+- v0.4.1 本地验证已通过 `npm run build`、`npm run api:check`、`git diff --check`；生产 Supabase 迁移仍需在 SQL Editor 执行后才能完成线上目录与审核闭环。

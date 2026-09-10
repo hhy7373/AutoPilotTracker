@@ -14,10 +14,11 @@ GET /api/catalog/providers
 GET /api/catalog/systems
 GET /api/catalog/releases
 GET /api/catalog/vehicles
+GET /api/catalog/sources
 GET /api/trips
 ```
 
-只返回已核验/已发布目录和已发布行程，不返回 VIN、VIN 哈希、作者 ID、邮箱、精确位置或 Storage 原始路径。
+只返回已核验/已发布目录和已发布行程；目录记录还必须关联已核验来源证据。不返回 VIN、VIN 哈希、作者 ID、邮箱、精确位置或 Storage 原始路径。
 
 ## 投稿与个人记录
 
@@ -56,4 +57,4 @@ GET   /api/admin/reports
 GET   /api/admin/audit-logs
 ```
 
-管理员修改目录、审核投稿和隐藏帖子必须写入审计日志。普通用户不能修改审核状态、作者 ID、统计字段或目录校验状态。审核队列默认筛选 `unverified`，证据接口只向管理员返回短时签名链接。
+管理员修改目录、审核投稿和隐藏帖子必须写入审计日志。普通用户不能修改审核状态、作者 ID、统计字段或目录校验状态。审核队列默认筛选 `unverified`，证据接口只向管理员返回短时签名链接。目录记录只有关联已核验来源后才允许标记为 `reviewed/published`。

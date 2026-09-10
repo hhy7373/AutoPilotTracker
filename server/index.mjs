@@ -41,6 +41,10 @@ function adminClient(request, reply) {
   if (!request.supabase) { reply.code(503).send({ error: '管理员数据服务未配置。' }); return null; }
   return request.supabase;
 }
+async function verifiedSourceIds(client) {
+  const { data, error } = await client.from('catalog_sources').select('id').in('verification_status', ['reviewed', 'published']);
+  return { ids: (data || []).map(row => row.id), error };
+}
 function publicTrip(row) { return { id: row.id, releaseId: row.release_id, brand: row.brand, system: row.system_name, version: row.version, hardware: row.hardware, vehicle: row.vehicle_model, trim: row.trim_name, date: row.trip_date, km: row.total_km, road: row.road_type, events: row.event_count, eventTypes: row.event_types, evidenceCount: row.evidence_count, verificationStatus: row.verification_status }; }
 function vinFingerprint(vin) { return createHash('sha256').update(vin).digest('hex'); }
 function parseTripBody(body) {
@@ -75,10 +79,9 @@ app.get('/api/catalog/sources', async (_request, reply) => {
 
 app.get('/api/catalog/systems', async (request, reply) => {
   if (!supabase) return reply.code(503).send({ error: '数据服务未配置。' });
-  // Keep legacy verified OEM seed records usable while the catalog-status
-  // backfill migration is waiting for the production SQL editor. Technology
-  // solutions remain hidden until they are explicitly reviewed.
-  let query = supabase.from('systems').select('id, provider_id, brand, name, slug, system_kind, catalog_status, verified_at').or('catalog_status.in.(reviewed,published),and(system_kind.eq.oem,catalog_status.eq.draft)').order('brand');
+  const sourceResult = await verifiedSourceIds(supabase);
+  if (sourceResult.error) return reply.code(502).send({ error: '来源目录暂时无法读取。' });
+  let query = supabase.from('systems').select('id, provider_id, brand, name, slug, system_kind, catalog_status, verified_at, primary_source_id').in('catalog_status', ['reviewed', 'published']).in('primary_source_id', sourceResult.ids.length ? sourceResult.ids : ['00000000-0000-0000-0000-000000000000']).order('brand');
   if (request.query?.providerId) query = query.eq('provider_id', request.query.providerId);
   const { data, error } = await query;
   if (error) return reply.code(502).send({ error: '系统目录暂时无法读取。' });
@@ -87,12 +90,12 @@ app.get('/api/catalog/systems', async (request, reply) => {
 
 app.get('/api/catalog/releases', async (request, reply) => {
   if (!supabase) return reply.code(503).send({ error: '数据服务未配置。' });
-  // Seed releases carry the authoritative legacy verification_status. The
-  // catalog-status migration will later make this explicit as reviewed.
-  const systemQuery = await supabase.from('systems').select('id, system_kind, catalog_status').or('catalog_status.in.(reviewed,published),and(system_kind.eq.oem,catalog_status.eq.draft)');
+  const sourceResult = await verifiedSourceIds(supabase);
+  if (sourceResult.error) return reply.code(502).send({ error: '来源目录暂时无法读取。' });
+  const systemQuery = await supabase.from('systems').select('id').in('catalog_status', ['reviewed', 'published']).in('primary_source_id', sourceResult.ids.length ? sourceResult.ids : ['00000000-0000-0000-0000-000000000000']);
   if (systemQuery.error) return reply.code(502).send({ error: '系统目录暂时无法读取。' });
   const publicSystemIds = (systemQuery.data || []).map(row => row.id);
-  let query = supabase.from('releases').select('id, system_id, slug, version, hardware, release_type, released_at, catalog_status, primary_source_id').eq('verification_status', 'verified').in('system_id', publicSystemIds.length ? publicSystemIds : ['00000000-0000-0000-0000-000000000000']).neq('catalog_status', 'retired').order('released_at', { ascending: false });
+  let query = supabase.from('releases').select('id, system_id, slug, version, hardware, release_type, released_at, catalog_status, primary_source_id').eq('verification_status', 'verified').in('catalog_status', ['reviewed', 'published']).in('system_id', publicSystemIds.length ? publicSystemIds : ['00000000-0000-0000-0000-000000000000']).in('primary_source_id', sourceResult.ids.length ? sourceResult.ids : ['00000000-0000-0000-0000-000000000000']).order('released_at', { ascending: false });
   if (request.query?.systemId) query = query.eq('system_id', request.query.systemId);
   const { data, error } = await query;
   if (error) return reply.code(502).send({ error: '版本目录暂时无法读取。' });
@@ -101,14 +104,16 @@ app.get('/api/catalog/releases', async (request, reply) => {
 
 app.get('/api/catalog/vehicles', async (request, reply) => {
   if (!supabase) return reply.code(503).send({ error: '数据服务未配置。' });
-  const systemQuery = await supabase.from('systems').select('id, system_kind, catalog_status').or('catalog_status.in.(reviewed,published),and(system_kind.eq.oem,catalog_status.eq.draft)');
+  const sourceResult = await verifiedSourceIds(supabase);
+  if (sourceResult.error) return reply.code(502).send({ error: '来源目录暂时无法读取。' });
+  const systemQuery = await supabase.from('systems').select('id').in('catalog_status', ['reviewed', 'published']).in('primary_source_id', sourceResult.ids.length ? sourceResult.ids : ['00000000-0000-0000-0000-000000000000']);
   if (systemQuery.error) return reply.code(502).send({ error: '系统目录暂时无法读取。' });
-  const systems = systemQuery.data || []; const publicSystemIds = systems.map(row => row.id); const legacyOemIds = systems.filter(row => row.system_kind === 'oem' && row.catalog_status === 'draft').map(row => row.id);
-  let query = supabase.from('vehicle_models').select('id, system_id, slug, name, trim_name, hardware, model_year, catalog_status, primary_source_id').in('system_id', publicSystemIds.length ? publicSystemIds : ['00000000-0000-0000-0000-000000000000']).neq('catalog_status', 'retired').order('name');
+  const publicSystemIds = (systemQuery.data || []).map(row => row.id);
+  let query = supabase.from('vehicle_models').select('id, system_id, slug, vehicle_brand, name, trim_name, hardware, model_year, catalog_status, primary_source_id').in('system_id', publicSystemIds.length ? publicSystemIds : ['00000000-0000-0000-0000-000000000000']).in('catalog_status', ['reviewed', 'published']).in('primary_source_id', sourceResult.ids.length ? sourceResult.ids : ['00000000-0000-0000-0000-000000000000']).order('name');
   if (request.query?.systemId) query = query.eq('system_id', request.query.systemId);
   const { data, error } = await query;
   if (error) return reply.code(502).send({ error: '车型目录暂时无法读取。' });
-  return { data: (data || []).filter(row => ['reviewed', 'published'].includes(row.catalog_status) || legacyOemIds.includes(row.system_id)) };
+  return { data: data || [] };
 });
 
 app.get('/api/trips', async (request, reply) => {
@@ -136,9 +141,9 @@ app.post('/api/trips', { preHandler: authenticate }, async (request, reply) => {
   const existing = await db.from('trips').select('id, verification_status, created_at').eq('author_id', request.user.id).eq('idempotency_key', idempotencyKey).maybeSingle();
   if (existing.error) return reply.code(502).send({ error: '投稿状态暂时无法确认。' });
   if (existing.data) return reply.code(200).send({ data: existing.data, replayed: true });
-  const { data: release, error: releaseError } = await db.from('releases').select('id').eq('slug', cleanText(body.releaseSlug, 120)).single();
-  const { data: vehicleModel, error: modelError } = await db.from('vehicle_models').select('id').eq('slug', cleanText(body.vehicleModelSlug, 120)).single();
-  if (releaseError || modelError) return reply.code(400).send({ error: '版本或车型不在已核验目录中。' });
+  const { data: release, error: releaseError } = await db.from('releases').select('id, system_id').eq('slug', cleanText(body.releaseSlug, 120)).eq('verification_status', 'verified').in('catalog_status', ['reviewed', 'published']).not('primary_source_id', 'is', null).single();
+  const { data: vehicleModel, error: modelError } = await db.from('vehicle_models').select('id, system_id').eq('slug', cleanText(body.vehicleModelSlug, 120)).in('catalog_status', ['reviewed', 'published']).not('primary_source_id', 'is', null).single();
+  if (releaseError || modelError || release.system_id !== vehicleModel.system_id) return reply.code(400).send({ error: '版本或车型尚未完成人工核验，暂不能投稿。' });
   const vinHash = body.vinHash;
   if (!vinHash) return reply.code(400).send({ error: '缺少 VIN 指纹，请在客户端完成 VIN 校验。' });
   const existingVehicle = await db.from('vehicle_profiles').select('id').eq('owner_id', request.user.id).eq('vin_hash', vinHash).maybeSingle();
@@ -254,14 +259,16 @@ app.post('/api/community/comments/:id/reports', { preHandler: authenticate }, as
 app.get('/api/admin/catalog', { preHandler: authenticate }, async (request, reply) => {
   if (!isAdmin(request.user)) return reply.code(403).send({ error: '需要管理员权限。' });
   const db = adminClient(request, reply); if (!db) return;
-  const [providers, systems, releases, vehicles] = await Promise.all([
+  const [providers, systems, releases, vehicles, sources, compatibilities] = await Promise.all([
     db.from('providers').select('*').order('name'),
     db.from('systems').select('*').order('brand'),
     db.from('releases').select('*').order('released_at', { ascending: false }),
-    db.from('vehicle_models').select('*').order('name')
+    db.from('vehicle_models').select('*').order('name'),
+    db.from('catalog_sources').select('*').order('checked_at', { ascending: false }),
+    db.from('system_vehicle_compatibility').select('*').order('created_at', { ascending: false })
   ]);
-  if (providers.error || systems.error || releases.error || vehicles.error) return reply.code(502).send({ error: '管理目录暂时无法读取。' });
-  return { data: { providers: providers.data, systems: systems.data, releases: releases.data, vehicles: vehicles.data } };
+  if (providers.error || systems.error || releases.error || vehicles.error || sources.error || compatibilities.error) return reply.code(502).send({ error: '管理目录暂时无法读取，请先执行 v0.4.1 数据库迁移。' });
+  return { data: { providers: providers.data, systems: systems.data, releases: releases.data, vehicles: vehicles.data, sources: sources.data, compatibilities: compatibilities.data } };
 });
 
 app.get('/api/admin/submissions', { preHandler: authenticate }, async (request, reply) => {
@@ -329,7 +336,7 @@ app.get('/api/admin/reports', { preHandler: authenticate }, async (request, repl
 app.patch('/api/admin/catalog/:type/:id', { preHandler: authenticate }, async (request, reply) => {
   if (!isAdmin(request.user)) return reply.code(403).send({ error: '需要管理员权限。' });
   const db = adminClient(request, reply); if (!db) return;
-  const tableMap = { providers: 'providers', systems: 'systems', releases: 'releases', vehicles: 'vehicle_models' };
+  const tableMap = { providers: 'providers', systems: 'systems', releases: 'releases', vehicles: 'vehicle_models', sources: 'catalog_sources', compatibilities: 'system_vehicle_compatibility' };
   const table = tableMap[request.params.type];
   if (!table) return reply.code(400).send({ error: '目录类型无效。' });
   const body = request.body || {};
@@ -337,10 +344,21 @@ app.patch('/api/admin/catalog/:type/:id', { preHandler: authenticate }, async (r
     providers: ['name', 'website', 'provider_type', 'catalog_status'],
     systems: ['brand', 'name', 'system_kind', 'catalog_status', 'verified_at', 'primary_source_id'],
     releases: ['version', 'hardware', 'release_type', 'catalog_status', 'released_at', 'primary_source_id'],
-    vehicles: ['name', 'trim_name', 'hardware', 'model_year', 'catalog_status', 'primary_source_id']
+    vehicles: ['vehicle_brand', 'name', 'trim_name', 'hardware', 'model_year', 'catalog_status', 'primary_source_id', 'verified_at', 'verification_note'],
+    sources: ['source_type', 'title', 'url', 'published_at', 'checked_at', 'excerpt', 'checked_by', 'verification_status', 'source_priority', 'conflict_note', 'verified_by'],
+    compatibilities: ['system_id', 'vehicle_model_id', 'release_id', 'hardware', 'source_id', 'verification_status', 'verified_at', 'verified_by', 'verification_note']
   }[request.params.type];
   const changes = Object.fromEntries(Object.entries(body).filter(([key]) => allowed.includes(key)));
   if (!Object.keys(changes).length) return reply.code(400).send({ error: '没有可修改的目录字段。' });
+  if (['systems', 'releases', 'vehicles'].includes(request.params.type) && ['reviewed', 'published'].includes(changes.catalog_status)) {
+    if (!changes.primary_source_id) {
+      const current = await db.from(table).select('primary_source_id').eq('id', request.params.id).maybeSingle();
+      changes.primary_source_id = current.data?.primary_source_id;
+    }
+    if (!changes.primary_source_id) return reply.code(400).send({ error: '公开前必须先关联具体来源证据。' });
+    const source = await db.from('catalog_sources').select('verification_status').eq('id', changes.primary_source_id).maybeSingle();
+    if (source.error || !['reviewed', 'published'].includes(source.data?.verification_status)) return reply.code(400).send({ error: '关联来源尚未核验，不能发布目录记录。' });
+  }
   const { data: before } = await db.from(table).select('*').eq('id', request.params.id).maybeSingle();
   const { data, error } = await db.from(table).update(changes).eq('id', request.params.id).select('*').single();
   if (error) return reply.code(400).send({ error: '目录更新失败。' });
