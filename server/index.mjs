@@ -281,7 +281,16 @@ app.get('/api/admin/catalog', { preHandler: authenticate }, async (request, repl
     db.from('system_vehicle_compatibility').select('*').order('created_at', { ascending: false })
   ]);
   if (providers.error || systems.error || releases.error || vehicles.error || sources.error || compatibilities.error) return reply.code(502).send({ error: '管理目录暂时无法读取，请先执行 v0.4.1 数据库迁移。' });
-  return { data: { providers: providers.data, systems: systems.data, releases: releases.data, vehicles: vehicles.data, sources: sources.data, compatibilities: compatibilities.data } };
+  const systemMap = new Map((systems.data || []).map(row => [row.id, row]));
+  const vehicleMap = new Map((vehicles.data || []).map(row => [row.id, row]));
+  const releaseMap = new Map((releases.data || []).map(row => [row.id, row]));
+  const compatibilityRows = (compatibilities.data || []).map(row => ({
+    ...row,
+    system: systemMap.get(row.system_id) ? { id: row.system_id, name: systemMap.get(row.system_id).name, brand: systemMap.get(row.system_id).brand } : null,
+    vehicle: vehicleMap.get(row.vehicle_model_id) ? { id: row.vehicle_model_id, name: vehicleMap.get(row.vehicle_model_id).name, trim_name: vehicleMap.get(row.vehicle_model_id).trim_name } : null,
+    release: row.release_id && releaseMap.get(row.release_id) ? { id: row.release_id, version: releaseMap.get(row.release_id).version } : null
+  }));
+  return { data: { providers: providers.data, systems: systems.data, releases: releases.data, vehicles: vehicles.data, sources: sources.data, compatibilities: compatibilityRows } };
 });
 
 app.get('/api/admin/submissions', { preHandler: authenticate }, async (request, reply) => {
@@ -371,6 +380,15 @@ app.patch('/api/admin/catalog/:type/:id', { preHandler: authenticate }, async (r
     if (!changes.primary_source_id) return reply.code(400).send({ error: '公开前必须先关联具体来源证据。' });
     const source = await db.from('catalog_sources').select('verification_status').eq('id', changes.primary_source_id).maybeSingle();
     if (source.error || !['reviewed', 'published'].includes(source.data?.verification_status)) return reply.code(400).send({ error: '关联来源尚未核验，不能发布目录记录。' });
+  }
+  if (request.params.type === 'compatibilities' && ['reviewed', 'published'].includes(changes.verification_status)) {
+    if (!changes.source_id) {
+      const current = await db.from(table).select('source_id').eq('id', request.params.id).maybeSingle();
+      changes.source_id = current.data?.source_id;
+    }
+    if (!changes.source_id) return reply.code(400).send({ error: '发布搭载关系前必须先关联具体来源证据。' });
+    const source = await db.from('catalog_sources').select('verification_status').eq('id', changes.source_id).maybeSingle();
+    if (source.error || !['reviewed', 'published'].includes(source.data?.verification_status)) return reply.code(400).send({ error: '搭载关系的关联来源尚未核验，不能发布。' });
   }
   const { data: before } = await db.from(table).select('*').eq('id', request.params.id).maybeSingle();
   const { data, error } = await db.from(table).update(changes).eq('id', request.params.id).select('*').single();

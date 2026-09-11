@@ -97,3 +97,4 @@
 - 迁移后验收命令为 `npm run verify:production`；它只读取 API 和 Supabase schema，不输出密钥，全部 PASS 后才能继续管理员和投稿闭环验收。
 - 当前验收证据：`vehicle_models.vehicle_brand` 和 `system_vehicle_compatibility` 在生产 Supabase 中不存在；来源表和 `public_release_stats` 存在，API 健康及公开行程隐私检查通过。目标仍未完成。
 - 2026-09-11 复核确认 ECS 的 systemd API 工作目录为 `/opt/autopilotlog-api`，线上 `/api/health` 返回 200，Nginx 与 API 均 active；部署文档更新命令已同步该实际路径。Supabase v0.4.1 迁移仍待执行。
+- v0.4.1 迁移补强数据库级公开边界：移除旧版系统、版本和车型的公开宽松 RLS，仅允许关联已核验来源且状态合格的记录被 anon/authenticated 读取；同时初始化车型搭载关系草稿，管理员可在后台关联来源并发布。

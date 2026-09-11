@@ -58,3 +58,5 @@ GET   /api/admin/audit-logs
 ```
 
 管理员修改目录、审核投稿和隐藏帖子必须写入审计日志。普通用户不能修改审核状态、作者 ID、统计字段或目录校验状态。审核队列默认筛选 `unverified`，证据接口只向管理员返回短时签名链接。目录记录只有关联已核验来源后才允许标记为 `reviewed/published`。
+
+v0.4.1 迁移后，Supabase REST 层的 RLS 也会拒绝公开读取没有已核验来源的草稿系统、版本和车型；管理员目录接口可维护 `system_vehicle_compatibility`，搭载关系发布同样必须关联已核验来源。

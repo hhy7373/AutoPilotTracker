@@ -85,6 +85,90 @@ create policy "admins manage compatibilities" on public.system_vehicle_compatibi
   with check ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
 grant select on public.system_vehicle_compatibility to anon, authenticated;
 
+-- Replace the v0.2 policies that exposed every catalog row, including drafts.
+-- The API also filters these tables, but RLS must enforce the same boundary for
+-- direct Supabase REST clients.
+drop policy if exists "public can read systems" on public.systems;
+drop policy if exists "public can read releases" on public.releases;
+drop policy if exists "public can read vehicle models" on public.vehicle_models;
+drop policy if exists "public can read verified systems" on public.systems;
+drop policy if exists "public can read verified releases" on public.releases;
+drop policy if exists "public can read verified vehicle models" on public.vehicle_models;
+
+create policy "public can read verified systems" on public.systems
+  for select to anon, authenticated
+  using (
+    catalog_status in ('reviewed', 'published')
+    and primary_source_id is not null
+    and exists (
+      select 1 from public.catalog_sources cs
+      where cs.id = systems.primary_source_id
+        and cs.verification_status in ('reviewed', 'published')
+    )
+  );
+
+create policy "public can read verified releases" on public.releases
+  for select to anon, authenticated
+  using (
+    verification_status = 'verified'
+    and catalog_status in ('reviewed', 'published')
+    and primary_source_id is not null
+    and exists (
+      select 1 from public.catalog_sources cs
+      where cs.id = releases.primary_source_id
+        and cs.verification_status in ('reviewed', 'published')
+    )
+    and exists (
+      select 1 from public.systems s
+      where s.id = releases.system_id
+        and s.catalog_status in ('reviewed', 'published')
+        and s.primary_source_id is not null
+    )
+  );
+
+create policy "public can read verified vehicle models" on public.vehicle_models
+  for select to anon, authenticated
+  using (
+    catalog_status in ('reviewed', 'published')
+    and primary_source_id is not null
+    and exists (
+      select 1 from public.catalog_sources cs
+      where cs.id = vehicle_models.primary_source_id
+        and cs.verification_status in ('reviewed', 'published')
+    )
+    and exists (
+      select 1 from public.systems s
+      where s.id = vehicle_models.system_id
+        and s.catalog_status in ('reviewed', 'published')
+        and s.primary_source_id is not null
+    )
+  );
+
+-- Seed draft compatibility rows for the existing catalog. They are useful to
+-- the administrator immediately, but cannot enter public selections until a
+-- source is verified and the row is promoted.
+insert into public.system_vehicle_compatibility
+  (system_id, vehicle_model_id, release_id, hardware, source_id, verification_status, verification_note)
+select vm.system_id, vm.id, r.id, coalesce(vm.hardware, r.hardware),
+       coalesce(vm.primary_source_id, r.primary_source_id), 'draft',
+       '待管理员核验系统、车型、硬件与版本搭载关系。'
+from public.vehicle_models vm
+left join public.releases r on r.system_id = vm.system_id
+where not exists (
+  select 1 from public.system_vehicle_compatibility c
+  where c.system_id = vm.system_id
+    and c.vehicle_model_id = vm.id
+    and c.release_id is not distinct from r.id
+);
+
+-- The API reads evidence for the private administrator review screen. This
+-- policy does not expose evidence to anonymous users or non-admin users.
+drop policy if exists "admins read all trip evidence" on public.evidence;
+create policy "admins read all trip evidence" on public.evidence
+  for select to authenticated
+  using ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
+grant select on public.evidence to authenticated;
+
 drop policy if exists "admins read trip evidence objects" on storage.objects;
 create policy "admins read trip evidence objects" on storage.objects
   for select to authenticated
