@@ -96,3 +96,4 @@
 - 线上诊断：若 `/api/catalog/vehicles` 返回“车型目录尚未完成 v0.4.1 数据库迁移”，说明生产库尚未增加 `vehicle_brand` 字段，需先执行两份 v0.4.1 迁移。
 - 迁移后验收命令为 `npm run verify:production`；它只读取 API 和 Supabase schema，不输出密钥，全部 PASS 后才能继续管理员和投稿闭环验收。
 - 当前验收证据：`vehicle_models.vehicle_brand` 和 `system_vehicle_compatibility` 在生产 Supabase 中不存在；来源表和 `public_release_stats` 存在，API 健康及公开行程隐私检查通过。目标仍未完成。
+- 2026-09-11 复核确认 ECS 的 systemd API 工作目录为 `/opt/autopilotlog-api`，线上 `/api/health` 返回 200，Nginx 与 API 均 active；部署文档更新命令已同步该实际路径。Supabase v0.4.1 迁移仍待执行。

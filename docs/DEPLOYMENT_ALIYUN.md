@@ -63,7 +63,7 @@ API 服务使用 `server/index.mjs`，默认监听 `127.0.0.1:3001`。生产环�
 更新 API 时：
 
 ```powershell
-scp -i C:\Users\ADAS_TEST_PC\Desktop\codex.pem server\index.mjs root@8.138.251.200:/opt/autopilotlog/server/index.mjs
+scp -i C:\Users\ADAS_TEST_PC\Desktop\codex.pem server\index.mjs root@8.138.251.200:/opt/autopilotlog-api/server/index.mjs
 ssh -i C:\Users\ADAS_TEST_PC\Desktop\codex.pem root@8.138.251.200 "systemctl restart autopilotlog-api && systemctl status autopilotlog-api --no-pager"
 ```
 
