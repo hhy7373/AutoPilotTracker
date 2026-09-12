@@ -98,3 +98,4 @@
 - 当前验收证据：`vehicle_models.vehicle_brand` 和 `system_vehicle_compatibility` 在生产 Supabase 中不存在；来源表和 `public_release_stats` 存在，API 健康及公开行程隐私检查通过。目标仍未完成。
 - 2026-09-11 复核确认 ECS 的 systemd API 工作目录为 `/opt/autopilotlog-api`，线上 `/api/health` 返回 200，Nginx 与 API 均 active；部署文档更新命令已同步该实际路径。Supabase v0.4.1 迁移仍待执行。
 - v0.4.1 迁移补强数据库级公开边界：移除旧版系统、版本和车型的公开宽松 RLS，仅允许关联已核验来源且状态合格的记录被 anon/authenticated 读取；同时初始化车型搭载关系草稿，管理员可在后台关联来源并发布。
+- 2026-09-12 线上复核：最新前端/API 已部署到 ECS，`/api/health` 返回 200，公开行程为空状态和禁止字段边界通过；生产 Supabase 仍缺少 `vehicle_models.vehicle_brand` 与 `system_vehicle_compatibility`，因为 SQL Editor 会话当前不可用，v0.4.1 迁移和管理员审核闭环仍未完成。恢复登录后必须依次执行 `202609100001_v041_catalog_review_and_admin.sql`、`202609100002_v041_public_catalog_views.sql`，再运行 `npm run verify:production`。
