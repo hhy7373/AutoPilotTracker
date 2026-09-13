@@ -21,7 +21,9 @@ join public.systems s on s.id = r.system_id
 join public.catalog_sources rs on rs.id = r.primary_source_id
 join public.catalog_sources ss on ss.id = s.primary_source_id
 left join public.trips t on t.release_id = r.id
-  and t.published_at is not null and t.verification_status <> 'rejected'
+  and t.published_at is not null
+  and t.verification_status <> 'rejected'
+  and t.is_test = false
 left join public.events e on e.trip_id = t.id
 where r.verification_status = 'verified'
   and r.catalog_status in ('reviewed', 'published')
