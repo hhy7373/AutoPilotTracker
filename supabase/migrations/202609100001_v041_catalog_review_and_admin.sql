@@ -142,6 +142,12 @@ create policy "public can read verified vehicle models" on public.vehicle_models
         and s.catalog_status in ('reviewed', 'published')
         and s.primary_source_id is not null
     )
+    and exists (
+      select 1 from public.system_vehicle_compatibility c
+      where c.vehicle_model_id = vehicle_models.id
+        and c.system_id = vehicle_models.system_id
+        and c.verification_status in ('reviewed', 'published')
+    )
   );
 
 -- Seed draft compatibility rows for the existing catalog. They are useful to

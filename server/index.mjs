@@ -49,6 +49,16 @@ function withCatalogSource(row, sourceMap) {
   const source = row.primary_source_id ? sourceMap.get(row.primary_source_id) : null;
   return { ...row, source: source || null };
 }
+async function publicCompatibility(client, systemId, vehicleModelId = null, releaseId = null) {
+  let query = client.from('system_vehicle_compatibility')
+    .select('system_id, vehicle_model_id, release_id')
+    .eq('system_id', systemId)
+    .in('verification_status', ['reviewed', 'published']);
+  if (vehicleModelId) query = query.eq('vehicle_model_id', vehicleModelId);
+  const { data, error } = await query;
+  if (error) return { data: [], error };
+  return { data: (data || []).filter(row => !releaseId || row.release_id === releaseId || row.release_id === null), error: null };
+}
 function publicTrip(row) { return { id: row.id, releaseId: row.release_id, brand: row.brand, system: row.system_name, version: row.version, hardware: row.hardware, vehicle: row.vehicle_model, trim: row.trim_name, date: row.trip_date, km: row.total_km, road: row.road_type, events: row.event_count, eventTypes: row.event_types, evidenceCount: row.evidence_count, verificationStatus: row.verification_status }; }
 function vinFingerprint(vin) { return createHash('sha256').update(vin).digest('hex'); }
 function parseTripBody(body) {
@@ -126,7 +136,10 @@ app.get('/api/catalog/vehicles', async (request, reply) => {
     const message = /vehicle_brand|column .* does not exist/i.test(error.message || '') ? '车型目录尚未完成 v0.4.1 数据库迁移，请先执行迁移脚本。' : '车型目录暂时无法读取。';
     return reply.code(502).send({ error: message });
   }
-  return { data: (data || []).map(row => withCatalogSource(row, sourceMap)) };
+  const compatibility = await Promise.all((data || []).map(row => publicCompatibility(supabase, row.system_id, row.id)));
+  if (compatibility.some(result => result.error)) return reply.code(502).send({ error: '车型搭载关系暂时无法读取。' });
+  const compatibleIds = new Set((data || []).filter((_row, index) => compatibility[index].data.length).map(row => row.id));
+  return { data: (data || []).filter(row => compatibleIds.has(row.id)).map(row => withCatalogSource(row, sourceMap)) };
 });
 
 app.get('/api/trips', async (request, reply) => {
@@ -157,6 +170,9 @@ app.post('/api/trips', { preHandler: authenticate }, async (request, reply) => {
   const { data: release, error: releaseError } = await db.from('releases').select('id, system_id').eq('slug', cleanText(body.releaseSlug, 120)).eq('verification_status', 'verified').in('catalog_status', ['reviewed', 'published']).not('primary_source_id', 'is', null).single();
   const { data: vehicleModel, error: modelError } = await db.from('vehicle_models').select('id, system_id').eq('slug', cleanText(body.vehicleModelSlug, 120)).in('catalog_status', ['reviewed', 'published']).not('primary_source_id', 'is', null).single();
   if (releaseError || modelError || release.system_id !== vehicleModel.system_id) return reply.code(400).send({ error: '版本或车型尚未完成人工核验，暂不能投稿。' });
+  const compatibility = await publicCompatibility(db, release.system_id, vehicleModel.id, release.id);
+  if (compatibility.error) return reply.code(502).send({ error: '车型搭载关系暂时无法确认，请稍后重试。' });
+  if (!compatibility.data.length) return reply.code(400).send({ error: '该版本与车型配置尚未完成搭载关系核验，暂不能投稿。' });
   const vinHash = body.vinHash;
   if (!vinHash) return reply.code(400).send({ error: '缺少 VIN 指纹，请在客户端完成 VIN 校验。' });
   const existingVehicle = await db.from('vehicle_profiles').select('id').eq('owner_id', request.user.id).eq('vin_hash', vinHash).maybeSingle();
