@@ -44,3 +44,4 @@ VITE_SUPABASE_ANON_KEY=你的公开匿名访问密钥
 - 公开统计视图使用 `security_invoker=true`，必须保留底层表的最小 RLS；不要为了让视图返回数据而开放 VIN 或车辆档案表。
 - 公开视图通过 `trips.vehicle_model_id` 获取车型，不读取包含 VIN 哈希的 `vehicle_profiles`；已有数据需执行 v0.2.1 迁移回填该关联。
 - `public_trip_event_summary` 只返回公开行程的事件类型、场景和数量，不返回事件文字描述或驾驶员标识。
+- v0.4.1 的公开目录、公开行程和版本统计还要求车型存在已核验/已发布的 `system_vehicle_compatibility` 搭载关系；测试行程 `is_test=true` 不进入公开行程、事件摘要和统计视图。

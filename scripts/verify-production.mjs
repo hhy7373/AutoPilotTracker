@@ -65,7 +65,8 @@ if (supabaseUrl && anonKey) {
     ['vehicle_brand 字段', 'vehicle_models?select=id,vehicle_brand&limit=1'],
     ['来源证据表', 'catalog_sources?select=id,verification_status&limit=1'],
     ['系统车型搭载表', 'system_vehicle_compatibility?select=id&limit=1'],
-    ['公开版本统计视图', 'public_release_stats?select=id&limit=1']
+    ['公开版本统计视图', 'public_release_stats?select=id&limit=1'],
+    ['公开行程事件摘要视图', 'public_trip_event_summary?select=trip_id,event_type,scene,event_count&limit=1']
   ]) {
     await check(`Supabase ${label}`, async () => {
       const { response, body } = await request(`${supabaseUrl}/rest/v1/${path}`, { headers });
