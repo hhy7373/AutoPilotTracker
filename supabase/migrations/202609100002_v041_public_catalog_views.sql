@@ -36,9 +36,17 @@ create view public.public_trip_event_summary as
 select e.trip_id, e.event_type, e.scene, count(*)::int as event_count
 from public.events e
 join public.trips t on t.id = e.trip_id
+join public.releases r on r.id = t.release_id
 where t.verification_status <> 'rejected'
   and t.published_at is not null
   and t.is_test = false
+  and exists (
+    select 1 from public.system_vehicle_compatibility c
+    where c.system_id = r.system_id
+      and c.vehicle_model_id = t.vehicle_model_id
+      and (c.release_id = t.release_id or c.release_id is null)
+      and c.verification_status in ('reviewed', 'published')
+  )
 group by e.trip_id, e.event_type, e.scene;
 
 create view public.public_release_stats as

@@ -67,8 +67,8 @@ update public.systems s set primary_source_id = cs.id, verification_note = case 
   else verification_note end
 from public.catalog_sources cs
 where cs.verification_status in ('reviewed', 'published')
-  and cs.url in ('https://auto.huawei.com/cn/ads', 'https://www.xiaopeng.com/', 'https://www.lixiang.com/L6', 'https://www.nio.cn/ad', 'https://www.xiaomiev.com/su7')
-  and ((s.slug = 'huawei-ads' and cs.url = 'https://auto.huawei.com/cn/ads')
+  and cs.url in ('https://auto.huawei.com/cn/news/2025/huawei-qiankun-intelligent-technology-launch/', 'https://www.xiaopeng.com/', 'https://www.lixiang.com/L6', 'https://www.nio.cn/ad', 'https://www.xiaomiev.com/su7')
+  and ((s.slug = 'huawei-ads' and cs.url = 'https://auto.huawei.com/cn/news/2025/huawei-qiankun-intelligent-technology-launch/')
     or (s.slug = 'xpeng-xngp' and cs.url = 'https://www.xiaopeng.com/')
     or (s.slug = 'li-auto-ad-max' and cs.url = 'https://www.lixiang.com/L6')
     or (s.slug = 'nio-nop-plus' and cs.url = 'https://www.nio.cn/ad')
