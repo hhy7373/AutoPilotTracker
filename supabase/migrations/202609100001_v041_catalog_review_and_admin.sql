@@ -39,18 +39,18 @@ create table if not exists public.system_vehicle_compatibility (
 insert into public.catalog_sources (source_type, title, url, excerpt, verification_status, source_priority)
 select 'official', v.title, v.url, v.excerpt, v.verification_status, 1
 from (values
-  ('华为乾崑 ADS 官方功能页', 'https://auto.huawei.com/cn/ads', '官方页面明确展示“乾崑智驾 ADS”及其辅助驾驶定位；具体 OTA、车型和配置仍需分别核验。', 'reviewed'),
+  ('华为乾崑 ADS 官方发布与功能页', 'https://auto.huawei.com/cn/news/2025/huawei-qiankun-intelligent-technology-launch/', '官方新闻明确写明 2025-04-22 发布乾崑智驾 ADS 4；具体小版本、车型和配置仍需分别核验。', 'reviewed'),
   ('小鹏汽车官方首页', 'https://www.xiaopeng.com/', '官方首页展示小鹏车型及第二代 VLA 信息；XNGP 历史版本需使用对应官方公告，不以首页替代。', 'reviewed'),
-  ('小鹏 P7 官方车型页', 'https://www.xiaopeng.com/p7n.html', '官方车型页明确展示 P7 搭载第二代 VLA。', 'reviewed'),
-  ('小鹏 G6 2026 官方车型页', 'https://www.xiaopeng.com/g6_2026.html', '官方车型页明确展示 2026 款 G6、图灵 AI 芯片和第二代 VLA。', 'reviewed'),
+  ('小鹏 P7 官方车型页', 'https://www.xiaopeng.com/p7n.html', '官方车型页明确展示 P7 搭载第二代 VLA、最高三颗图灵 AI 芯片和 2250TOPS 有效算力。', 'reviewed'),
+  ('小鹏 G6 2026 官方车型页', 'https://www.xiaopeng.com/g6_2026.html', '官方车型页明确展示 2026 款 G6、三颗图灵 AI 芯片、2250TOPS 有效算力和第二代 VLA。', 'reviewed'),
   ('理想 L6 官方车型页', 'https://www.lixiang.com/L6', '官方车型页展示 L6 的马赫 M100 芯片、马赫 VLA 和车型配置内容。', 'reviewed'),
   ('蔚来智能辅助驾驶官方页面', 'https://www.nio.cn/ad', '官方页面明确展示全域领航辅助 NOP+，并说明其仍属于辅助驾驶。', 'reviewed'),
   ('蔚来 ET5T 官方车型页', 'https://www.nio.cn/et5t', '官方车型入口用于核验 ET5T 车型身份；智驾硬件需以具体配置资料继续核验。', 'reviewed'),
-  ('小米 SU7 官方车型页', 'https://www.xiaomiev.com/su7', '官方车型页明确展示 Xiaomi HAD 小米辅助驾驶。', 'reviewed'),
+  ('小米 SU7 官方车型页', 'https://www.xiaomiev.com/su7', '官方车型页明确展示 Xiaomi HAD、全系激光雷达、4D 毫米波雷达和 700TOPS 辅助驾驶算力。', 'reviewed'),
   ('地平线官网入口', 'https://www.horizon.cc/', '官网入口已登记；当前环境无法稳定建立 TLS，产品/车型搭载关系暂不发布。', 'draft'),
   ('卓驭官网入口', 'https://www.driving-x.com/', '官网入口已登记；当前环境无法稳定建立 TLS，产品/车型搭载关系暂不发布。', 'draft'),
   ('元戎启行官网', 'https://www.deeproute.ai/', '官方首页展示自动驾驶产品，但未作为车企 OTA 版本发布。', 'reviewed'),
-  ('文远知行官网', 'https://www.weride.ai/', '官方首页展示 Robotaxi、Robobus、WRD 3.0 等产品；不等同于乘用车 OTA。', 'reviewed')
+  ('文远知行官网', 'https://www.weride.ai/', '官方首页列出 WRD 3.0 One-Stage End-to-End ADAS，并描述为可量产汽车级方案；不等同于乘用车 OTA。', 'reviewed')
 ) v(title, url, excerpt, verification_status)
 where not exists (select 1 from public.catalog_sources s where s.url = v.url);
 
@@ -59,7 +59,7 @@ set checked_at = current_date, checked_by = 'AutoPilotLog research', verified_by
 where checked_by is null;
 
 update public.systems s set primary_source_id = cs.id, verification_note = case s.slug
-  when 'huawei-ads' then '官方页核验到乾崑智驾 ADS；具体 OTA 与车型搭载关系仍需单独来源。'
+  when 'huawei-ads' then '官方新闻核验到 2025-04-22 发布乾崑智驾 ADS 4；具体 OTA 小版本与车型搭载关系仍需单独来源。'
   when 'xpeng-xngp' then '官网当前展示第二代 VLA；XNGP 作为历史系统标签保留，具体版本需历史公告。'
   when 'li-auto-ad-max' then '官方 L6 页面核验到马赫 VLA/智驾能力；AD Pro/Max 配置关系需单独来源。'
   when 'nio-nop-plus' then '官方智能驾驶页核验到 NOP+，并明确其为辅助驾驶。'

@@ -10,16 +10,16 @@
 
 | 对象 | 官方来源 | 已核验事实 | 未直接核验的事实 |
 | --- | --- | --- | --- |
-| 华为乾崑 ADS | https://auto.huawei.com/cn/ads | 乾崑智驾 ADS 产品/辅助驾驶页面存在 | `ADS 4.0.1`、具体车型配置和 MDC 硬件搭载关系 |
+| 华为乾崑 ADS | https://auto.huawei.com/cn/ads；https://auto.huawei.com/cn/news/2025/huawei-qiankun-intelligent-technology-launch/；https://auto.huawei.com/cn/vehicle-models/ | 官方产品页存在；官方新闻明确写明 2025-04-22 发布乾崑智驾 ADS 4；官方合作车型页可按方案/品牌筛选车型 | `ADS 4.0.1` 这一具体小版本、具体车型配置和 MDC 硬件搭载关系 |
 | 小鹏 | https://www.xiaopeng.com/ | 小鹏官方车型与智驾产品入口存在 | `XNGP 5.6.0` 及其历史 OTA 公告 |
-| 小鹏 P7 | https://www.xiaopeng.com/p7n.html | P7 官方车型页面及其当前智驾宣传信息 | 历史版本与每个配置的硬件映射 |
-| 小鹏 G6 | https://www.xiaopeng.com/g6_2026.html | 2026 款 G6 官方车型页面、图灵 AI 芯片和第二代 VLA 信息 | `XNGP 5.6.0` 的适配范围 |
+| 小鹏 P7 | https://www.xiaopeng.com/p7n.html | P7 官方车型页面明确写有第二代 VLA、最高三颗图灵 AI 芯片和 2250TOPS 有效算力 | 历史版本与每个配置的硬件映射 |
+| 小鹏 G6 | https://www.xiaopeng.com/g6_2026.html | 2026 款 G6 官方车型页面明确写有第二代 VLA、三颗图灵 AI 芯片和 2250TOPS 有效算力 | `XNGP 5.6.0` 的适配范围 |
 | 理想 L6 | https://www.lixiang.com/L6 | L6 官方车型页面、马赫 M100/马赫 VLA 信息 | `AD 7.2.0`、AD Pro/Max 与配置的完整映射 |
 | 蔚来智驾 | https://www.nio.cn/ad | NOP+ 官方智能驾驶页面，并明确辅助驾驶属性 | `NOP+ 3.9.5` 和具体车型硬件映射 |
 | 蔚来 ET5T | https://www.nio.cn/et5t | ET5T 官方车型页面 | 智驾硬件和版本的逐配置原文 |
-| 小米 SU7 | https://www.xiaomiev.com/su7 | Xiaomi HAD 官方车型页面 | `HAD 1.8.0`、Thor 与具体配置的 OTA 原文 |
+| 小米 SU7 | https://www.xiaomiev.com/su7 | 官方车型页明确写有 Xiaomi HAD、全系激光雷达、4D 毫米波雷达和 700TOPS 辅助驾驶算力 | `HAD 1.8.0`、Thor 与具体配置的 OTA 原文 |
 | 元戎启行 | https://www.deeproute.ai/ | 自动驾驶产品/方案官网入口存在 | 不把方案产品版本伪装成乘用车 OTA |
-| 文远知行 | https://www.weride.ai/ | Robotaxi、Robobus、WRD 等产品入口存在 | 不把方案产品版本伪装成乘用车 OTA |
+| 文远知行 | https://www.weride.ai/ | 官方首页明确列出 WRD 3.0 One-Stage End-to-End ADAS，并描述为可量产汽车级方案 | 不把方案产品版本伪装成乘用车 OTA，具体合作车型仍需单独来源 |
 | 地平线 | https://www.horizon.cc/ | 官方入口已登记 | 当前环境未取得稳定可复核的具体搭载原文 |
 | 卓驭 | https://www.driving-x.com/ | 官方入口已登记 | 当前环境未取得稳定可复核的具体搭载原文 |
 
