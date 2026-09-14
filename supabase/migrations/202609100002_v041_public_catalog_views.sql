@@ -94,13 +94,7 @@ left join public.trips t on t.release_id = r.id
   and t.published_at is not null
   and t.verification_status <> 'rejected'
   and t.is_test = false
-left join public.events e on e.trip_id = t.id
-where r.verification_status = 'verified'
-  and r.catalog_status in ('reviewed', 'published')
-  and s.catalog_status in ('reviewed', 'published')
-  and rs.verification_status in ('reviewed', 'published')
-  and ss.verification_status in ('reviewed', 'published')
-  and (t.id is null or exists (
+  and exists (
     select 1 from public.system_vehicle_compatibility c
     where c.system_id = r.system_id
       and c.vehicle_model_id = t.vehicle_model_id
@@ -112,7 +106,13 @@ where r.verification_status = 'verified'
         where cs.id = c.source_id
           and cs.verification_status in ('reviewed', 'published')
       )
-  ))
+  )
+left join public.events e on e.trip_id = t.id
+where r.verification_status = 'verified'
+  and r.catalog_status in ('reviewed', 'published')
+  and s.catalog_status in ('reviewed', 'published')
+  and rs.verification_status in ('reviewed', 'published')
+  and ss.verification_status in ('reviewed', 'published')
 group by r.id, r.slug, s.brand, s.name, r.version, r.hardware, r.released_at, r.verification_status;
 
 alter view public.public_release_stats set (security_invoker = true);

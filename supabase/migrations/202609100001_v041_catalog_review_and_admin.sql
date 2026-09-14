@@ -131,6 +131,11 @@ create policy "public can read verified releases" on public.releases
       where s.id = releases.system_id
         and s.catalog_status in ('reviewed', 'published')
         and s.primary_source_id is not null
+        and exists (
+          select 1 from public.catalog_sources cs2
+          where cs2.id = s.primary_source_id
+            and cs2.verification_status in ('reviewed', 'published')
+        )
     )
   );
 
@@ -149,6 +154,11 @@ create policy "public can read verified vehicle models" on public.vehicle_models
       where s.id = vehicle_models.system_id
         and s.catalog_status in ('reviewed', 'published')
         and s.primary_source_id is not null
+        and exists (
+          select 1 from public.catalog_sources cs2
+          where cs2.id = s.primary_source_id
+            and cs2.verification_status in ('reviewed', 'published')
+        )
     )
     and exists (
       select 1 from public.system_vehicle_compatibility c
