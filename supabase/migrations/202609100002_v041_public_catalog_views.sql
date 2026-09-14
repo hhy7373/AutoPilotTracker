@@ -29,6 +29,12 @@ where t.verification_status <> 'rejected'
       and c.vehicle_model_id = t.vehicle_model_id
       and (c.release_id = t.release_id or c.release_id is null)
       and c.verification_status in ('reviewed', 'published')
+      and c.source_id is not null
+      and exists (
+        select 1 from public.catalog_sources cs
+        where cs.id = c.source_id
+          and cs.verification_status in ('reviewed', 'published')
+      )
   )
 group by t.id, s.brand, s.name, r.version, r.hardware, vm.name, vm.trim_name;
 
@@ -37,15 +43,33 @@ select e.trip_id, e.event_type, e.scene, count(*)::int as event_count
 from public.events e
 join public.trips t on t.id = e.trip_id
 join public.releases r on r.id = t.release_id
+join public.systems s on s.id = r.system_id
+join public.vehicle_models vm on vm.id = t.vehicle_model_id
+join public.catalog_sources rs on rs.id = r.primary_source_id
+join public.catalog_sources ss on ss.id = s.primary_source_id
+join public.catalog_sources vs on vs.id = vm.primary_source_id
 where t.verification_status <> 'rejected'
   and t.published_at is not null
   and t.is_test = false
+  and r.verification_status = 'verified'
+  and r.catalog_status in ('reviewed', 'published')
+  and s.catalog_status in ('reviewed', 'published')
+  and vm.catalog_status in ('reviewed', 'published')
+  and rs.verification_status in ('reviewed', 'published')
+  and ss.verification_status in ('reviewed', 'published')
+  and vs.verification_status in ('reviewed', 'published')
   and exists (
     select 1 from public.system_vehicle_compatibility c
     where c.system_id = r.system_id
       and c.vehicle_model_id = t.vehicle_model_id
       and (c.release_id = t.release_id or c.release_id is null)
       and c.verification_status in ('reviewed', 'published')
+      and c.source_id is not null
+      and exists (
+        select 1 from public.catalog_sources cs
+        where cs.id = c.source_id
+          and cs.verification_status in ('reviewed', 'published')
+      )
   )
 group by e.trip_id, e.event_type, e.scene;
 
@@ -82,6 +106,12 @@ where r.verification_status = 'verified'
       and c.vehicle_model_id = t.vehicle_model_id
       and (c.release_id = t.release_id or c.release_id is null)
       and c.verification_status in ('reviewed', 'published')
+      and c.source_id is not null
+      and exists (
+        select 1 from public.catalog_sources cs
+        where cs.id = c.source_id
+          and cs.verification_status in ('reviewed', 'published')
+      )
   ))
 group by r.id, r.slug, s.brand, s.name, r.version, r.hardware, r.released_at, r.verification_status;
 

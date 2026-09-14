@@ -77,7 +77,15 @@ where cs.verification_status in ('reviewed', 'published')
 alter table public.system_vehicle_compatibility enable row level security;
 drop policy if exists "public can read reviewed compatibilities" on public.system_vehicle_compatibility;
 create policy "public can read reviewed compatibilities" on public.system_vehicle_compatibility
-  for select to anon, authenticated using (verification_status in ('reviewed', 'published'));
+  for select to anon, authenticated using (
+    verification_status in ('reviewed', 'published')
+    and source_id is not null
+    and exists (
+      select 1 from public.catalog_sources cs
+      where cs.id = system_vehicle_compatibility.source_id
+        and cs.verification_status in ('reviewed', 'published')
+    )
+  );
 drop policy if exists "admins manage compatibilities" on public.system_vehicle_compatibility;
 create policy "admins manage compatibilities" on public.system_vehicle_compatibility
   for all to authenticated
@@ -147,6 +155,12 @@ create policy "public can read verified vehicle models" on public.vehicle_models
       where c.vehicle_model_id = vehicle_models.id
         and c.system_id = vehicle_models.system_id
         and c.verification_status in ('reviewed', 'published')
+        and c.source_id is not null
+        and exists (
+          select 1 from public.catalog_sources cs2
+          where cs2.id = c.source_id
+            and cs2.verification_status in ('reviewed', 'published')
+        )
     )
   );
 

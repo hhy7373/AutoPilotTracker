@@ -51,9 +51,10 @@ function withCatalogSource(row, sourceMap) {
 }
 async function publicCompatibility(client, systemId, vehicleModelId = null, releaseId = null) {
   let query = client.from('system_vehicle_compatibility')
-    .select('system_id, vehicle_model_id, release_id')
+    .select('system_id, vehicle_model_id, release_id, source_id')
     .eq('system_id', systemId)
-    .in('verification_status', ['reviewed', 'published']);
+    .in('verification_status', ['reviewed', 'published'])
+    .not('source_id', 'is', null);
   if (vehicleModelId) query = query.eq('vehicle_model_id', vehicleModelId);
   const { data, error } = await query;
   if (error) return { data: [], error };
