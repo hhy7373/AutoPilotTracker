@@ -71,6 +71,21 @@ as $$
     where vm.id = p_vehicle_model_id
       and vm.catalog_status in ('reviewed', 'published')
       and public.catalog_source_is_public(vm.primary_source_id)
+      and public.catalog_system_is_public(vm.system_id)
+  );
+$$;
+
+create or replace function public.catalog_release_is_public(p_release_id uuid)
+returns boolean language sql stable security definer
+set search_path = public, pg_temp
+as $$
+  select exists (
+    select 1 from public.releases r
+    where r.id = p_release_id
+      and r.verification_status = 'verified'
+      and r.catalog_status in ('reviewed', 'published')
+      and public.catalog_source_is_public(r.primary_source_id)
+      and public.catalog_system_is_public(r.system_id)
   );
 $$;
 
@@ -87,6 +102,7 @@ as $$
       and c.vehicle_model_id = p_vehicle_model_id
       and c.verification_status in ('reviewed', 'published')
       and public.catalog_source_is_public(c.source_id)
+      and (c.release_id is null or public.catalog_release_is_public(c.release_id))
   );
 $$;
 
@@ -107,17 +123,20 @@ as $$
         and (c.release_id = p_release_id or c.release_id is null)
         and c.verification_status in ('reviewed', 'published')
         and public.catalog_source_is_public(c.source_id)
+        and (c.release_id is null or public.catalog_release_is_public(c.release_id))
     );
 $$;
 
 revoke all on function public.catalog_source_is_public(uuid) from public;
 revoke all on function public.catalog_system_is_public(uuid) from public;
 revoke all on function public.catalog_vehicle_is_public(uuid) from public;
+revoke all on function public.catalog_release_is_public(uuid) from public;
 revoke all on function public.vehicle_has_public_compatibility(uuid, uuid) from public;
 revoke all on function public.compatibility_is_public(uuid, uuid, uuid) from public;
 grant execute on function public.catalog_source_is_public(uuid) to anon, authenticated;
 grant execute on function public.catalog_system_is_public(uuid) to anon, authenticated;
 grant execute on function public.catalog_vehicle_is_public(uuid) to anon, authenticated;
+grant execute on function public.catalog_release_is_public(uuid) to anon, authenticated;
 grant execute on function public.vehicle_has_public_compatibility(uuid, uuid) to anon, authenticated;
 grant execute on function public.compatibility_is_public(uuid, uuid, uuid) to anon, authenticated;
 

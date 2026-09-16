@@ -42,6 +42,12 @@ where t.verification_status <> 'rejected'
         where cs.id = c.source_id
           and cs.verification_status in ('reviewed', 'published')
       )
+      and exists (
+        select 1 from public.vehicle_models vm2
+        where vm2.id = t.vehicle_model_id
+          and vm2.catalog_status in ('reviewed', 'published')
+          and vm2.primary_source_id is not null
+      )
   )
 group by t.id, s.brand, s.name, r.version, r.hardware, vm.name, vm.trim_name;
 
@@ -76,6 +82,12 @@ where t.verification_status <> 'rejected'
         select 1 from public.catalog_sources cs
         where cs.id = c.source_id
           and cs.verification_status in ('reviewed', 'published')
+      )
+      and exists (
+        select 1 from public.vehicle_models vm2
+        where vm2.id = t.vehicle_model_id
+          and vm2.catalog_status in ('reviewed', 'published')
+          and vm2.primary_source_id is not null
       )
   )
 group by e.trip_id, e.event_type, e.scene;
@@ -112,6 +124,12 @@ left join public.trips t on t.release_id = r.id
         select 1 from public.catalog_sources cs
         where cs.id = c.source_id
           and cs.verification_status in ('reviewed', 'published')
+      )
+      and exists (
+        select 1 from public.vehicle_models vm2
+        where vm2.id = t.vehicle_model_id
+          and vm2.catalog_status in ('reviewed', 'published')
+          and vm2.primary_source_id is not null
       )
   )
 left join public.events e on e.trip_id = t.id
