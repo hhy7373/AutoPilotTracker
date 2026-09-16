@@ -109,4 +109,5 @@
 - v0.4.1 版本统计将搭载关系过滤放在行程左连接条件中，避免不合格行程导致整个版本从公开目录消失；无合格样本的版本保留为 0 统计。
 - v0.4.1 迁移会将缺少精确来源证据的示例 OTA 记录降为 `unverified`/`draft`；生产目录不再把旧种子里的 `verified` 状态当作人工核验事实。
 - v0.4.1 公开搭载关系 RLS 与公开行程视图同时校验系统、版本、车型及其来源状态，草稿目录不能通过兼容关系间接进入公开接口；生产仍待 SQL Editor 执行两份 v0.4.1 迁移。
+- v0.4.1 目录 RLS 跨表判断使用固定 search_path 的只读 SECURITY DEFINER 函数，避免 vehicle_models 与 system_vehicle_compatibility 策略互相递归；函数只返回公开状态布尔值。
 - v0.4.2 修复阿里云 ECS 静态资源目录权限导致的线上白屏：Nginx worker 用户必须能遍历 `/var/www/autopilotlog/assets` 并读取其中的 JS/CSS；每次上传 `dist/` 后需将目录设为 `755`、文件设为 `644`，再执行 Nginx 配置检查和 reload。

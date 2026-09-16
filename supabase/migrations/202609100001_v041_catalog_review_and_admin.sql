@@ -36,6 +36,91 @@ create table if not exists public.system_vehicle_compatibility (
   unique (system_id, vehicle_model_id, release_id)
 );
 
+-- RLS policies below need to validate relationships across catalog tables.
+-- These narrowly scoped SECURITY DEFINER predicates read only publication
+-- state and never return row data. The fixed search_path prevents shadowing.
+create or replace function public.catalog_source_is_public(p_source_id uuid)
+returns boolean language sql stable security definer
+set search_path = public, pg_temp
+as $$
+  select exists (
+    select 1 from public.catalog_sources cs
+    where cs.id = p_source_id
+      and cs.verification_status in ('reviewed', 'published')
+  );
+$$;
+
+create or replace function public.catalog_system_is_public(p_system_id uuid)
+returns boolean language sql stable security definer
+set search_path = public, pg_temp
+as $$
+  select exists (
+    select 1 from public.systems s
+    where s.id = p_system_id
+      and s.catalog_status in ('reviewed', 'published')
+      and public.catalog_source_is_public(s.primary_source_id)
+  );
+$$;
+
+create or replace function public.catalog_vehicle_is_public(p_vehicle_model_id uuid)
+returns boolean language sql stable security definer
+set search_path = public, pg_temp
+as $$
+  select exists (
+    select 1 from public.vehicle_models vm
+    where vm.id = p_vehicle_model_id
+      and vm.catalog_status in ('reviewed', 'published')
+      and public.catalog_source_is_public(vm.primary_source_id)
+  );
+$$;
+
+create or replace function public.vehicle_has_public_compatibility(
+  p_system_id uuid,
+  p_vehicle_model_id uuid
+)
+returns boolean language sql stable security definer
+set search_path = public, pg_temp
+as $$
+  select exists (
+    select 1 from public.system_vehicle_compatibility c
+    where c.system_id = p_system_id
+      and c.vehicle_model_id = p_vehicle_model_id
+      and c.verification_status in ('reviewed', 'published')
+      and public.catalog_source_is_public(c.source_id)
+  );
+$$;
+
+create or replace function public.compatibility_is_public(
+  p_system_id uuid,
+  p_vehicle_model_id uuid,
+  p_release_id uuid
+)
+returns boolean language sql stable security definer
+set search_path = public, pg_temp
+as $$
+  select public.catalog_system_is_public(p_system_id)
+    and public.catalog_vehicle_is_public(p_vehicle_model_id)
+    and exists (
+      select 1 from public.system_vehicle_compatibility c
+      where c.system_id = p_system_id
+        and c.vehicle_model_id = p_vehicle_model_id
+        and (c.release_id = p_release_id or c.release_id is null)
+        and c.verification_status in ('reviewed', 'published')
+        and public.catalog_source_is_public(c.source_id)
+    );
+$$;
+
+revoke all on function public.catalog_source_is_public(uuid) from public;
+revoke all on function public.catalog_system_is_public(uuid) from public;
+revoke all on function public.catalog_vehicle_is_public(uuid) from public;
+revoke all on function public.vehicle_has_public_compatibility(uuid, uuid) from public;
+revoke all on function public.compatibility_is_public(uuid, uuid, uuid) from public;
+grant execute on function public.catalog_source_is_public(uuid) to anon, authenticated;
+grant execute on function public.catalog_system_is_public(uuid) to anon, authenticated;
+grant execute on function public.catalog_vehicle_is_public(uuid) to anon, authenticated;
+grant execute on function public.vehicle_has_public_compatibility(uuid, uuid) to anon, authenticated;
+grant execute on function public.compatibility_is_public(uuid, uuid, uuid) to anon, authenticated;
+
 insert into public.catalog_sources (source_type, title, url, excerpt, verification_status, source_priority)
 select 'official', v.title, v.url, v.excerpt, v.verification_status, 1
 from (values
@@ -80,33 +165,7 @@ create policy "public can read reviewed compatibilities" on public.system_vehicl
   for select to anon, authenticated using (
     verification_status in ('reviewed', 'published')
     and source_id is not null
-    and exists (
-      select 1 from public.catalog_sources cs
-      where cs.id = system_vehicle_compatibility.source_id
-        and cs.verification_status in ('reviewed', 'published')
-    )
-    and exists (
-      select 1 from public.systems s
-      where s.id = system_vehicle_compatibility.system_id
-        and s.catalog_status in ('reviewed', 'published')
-        and s.primary_source_id is not null
-        and exists (
-          select 1 from public.catalog_sources cs
-          where cs.id = s.primary_source_id
-            and cs.verification_status in ('reviewed', 'published')
-        )
-    )
-    and exists (
-      select 1 from public.vehicle_models vm
-      where vm.id = system_vehicle_compatibility.vehicle_model_id
-        and vm.catalog_status in ('reviewed', 'published')
-        and vm.primary_source_id is not null
-        and exists (
-          select 1 from public.catalog_sources cs
-          where cs.id = vm.primary_source_id
-            and cs.verification_status in ('reviewed', 'published')
-        )
-    )
+    and public.compatibility_is_public(system_vehicle_compatibility.system_id, system_vehicle_compatibility.vehicle_model_id, system_vehicle_compatibility.release_id)
   );
 drop policy if exists "admins manage compatibilities" on public.system_vehicle_compatibility;
 create policy "admins manage compatibilities" on public.system_vehicle_compatibility
@@ -130,11 +189,7 @@ create policy "public can read verified systems" on public.systems
   using (
     catalog_status in ('reviewed', 'published')
     and primary_source_id is not null
-    and exists (
-      select 1 from public.catalog_sources cs
-      where cs.id = systems.primary_source_id
-        and cs.verification_status in ('reviewed', 'published')
-    )
+    and public.catalog_source_is_public(primary_source_id)
   );
 
 create policy "public can read verified releases" on public.releases
@@ -143,22 +198,8 @@ create policy "public can read verified releases" on public.releases
     verification_status = 'verified'
     and catalog_status in ('reviewed', 'published')
     and primary_source_id is not null
-    and exists (
-      select 1 from public.catalog_sources cs
-      where cs.id = releases.primary_source_id
-        and cs.verification_status in ('reviewed', 'published')
-    )
-    and exists (
-      select 1 from public.systems s
-      where s.id = releases.system_id
-        and s.catalog_status in ('reviewed', 'published')
-        and s.primary_source_id is not null
-        and exists (
-          select 1 from public.catalog_sources cs2
-          where cs2.id = s.primary_source_id
-            and cs2.verification_status in ('reviewed', 'published')
-        )
-    )
+    and public.catalog_source_is_public(primary_source_id)
+    and public.catalog_system_is_public(system_id)
   );
 
 create policy "public can read verified vehicle models" on public.vehicle_models
@@ -166,34 +207,8 @@ create policy "public can read verified vehicle models" on public.vehicle_models
   using (
     catalog_status in ('reviewed', 'published')
     and primary_source_id is not null
-    and exists (
-      select 1 from public.catalog_sources cs
-      where cs.id = vehicle_models.primary_source_id
-        and cs.verification_status in ('reviewed', 'published')
-    )
-    and exists (
-      select 1 from public.systems s
-      where s.id = vehicle_models.system_id
-        and s.catalog_status in ('reviewed', 'published')
-        and s.primary_source_id is not null
-        and exists (
-          select 1 from public.catalog_sources cs2
-          where cs2.id = s.primary_source_id
-            and cs2.verification_status in ('reviewed', 'published')
-        )
-    )
-    and exists (
-      select 1 from public.system_vehicle_compatibility c
-      where c.vehicle_model_id = vehicle_models.id
-        and c.system_id = vehicle_models.system_id
-        and c.verification_status in ('reviewed', 'published')
-        and c.source_id is not null
-        and exists (
-          select 1 from public.catalog_sources cs2
-          where cs2.id = c.source_id
-            and cs2.verification_status in ('reviewed', 'published')
-        )
-    )
+    and public.catalog_vehicle_is_public(id)
+    and public.vehicle_has_public_compatibility(system_id, id)
   );
 
 -- Seed draft compatibility rows for the existing catalog. They are useful to
