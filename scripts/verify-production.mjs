@@ -34,7 +34,7 @@ async function check(label, fn) {
 function schemaMigrationHint(error) {
   const message = String(error?.message || error || '');
   if (/vehicle_brand|system_vehicle_compatibility|schema cache/i.test(message)) {
-    return '生产库尚未执行 v0.4.1 迁移 202609100001/202609100002';
+    return '生产库尚未执行 v0.4.1 迁移 202609100001/202609160001/202609100002';
   }
   return message;
 }
@@ -66,6 +66,29 @@ for (const [label, path] of [['公开车型目录', '/catalog/vehicles'], ['公�
     return `${body.data.length} records`;
   });
 }
+
+await check('官方目录最小记录集', async () => {
+  const [systems, releases, vehicles] = await Promise.all([
+    request(`${apiBase}/catalog/systems`),
+    request(`${apiBase}/catalog/releases`),
+    request(`${apiBase}/catalog/vehicles`)
+  ]);
+  for (const result of [systems, releases, vehicles]) {
+    if (!result.response.ok || !Array.isArray(result.body?.data)) {
+      throw new Error(schemaMigrationHint(result.body?.error || `HTTP ${result.response.status}`));
+    }
+  }
+  const requiredSystems = ['huawei-ads', 'xpeng-xngp', 'li-auto-ad-max', 'nio-nop-plus', 'xiaomi-had'];
+  const requiredReleases = ['huawei-ads-4', 'xpeng-vla-2', 'li-mahe-vla', 'nio-nop-plus-official', 'xiaomi-had-official'];
+  const systemSlugs = new Set(systems.body.data.map(row => row.slug));
+  const releaseSlugs = new Set(releases.body.data.map(row => row.slug));
+  const missingSystems = requiredSystems.filter(slug => !systemSlugs.has(slug));
+  const missingReleases = requiredReleases.filter(slug => !releaseSlugs.has(slug));
+  if (missingSystems.length || missingReleases.length || vehicles.body.data.length < 5) {
+    throw new Error(`官方证据目录不完整：缺少系统 ${missingSystems.join(',') || '无'}；缺少版本 ${missingReleases.join(',') || '无'}；车型 ${vehicles.body.data.length} 条`);
+  }
+  return `${systems.body.data.length} systems, ${releases.body.data.length} releases, ${vehicles.body.data.length} vehicles`;
+});
 
 await check('公开事件摘要隐私字段', async () => {
   const { response, body } = await request(`${apiBase}/trips`);

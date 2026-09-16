@@ -61,4 +61,6 @@ GET   /api/admin/audit-logs
 
 v0.4.1 迁移后，Supabase REST 层的 RLS 也会拒绝公开读取没有已核验来源的草稿系统、版本和车型；管理员目录接口可维护 `system_vehicle_compatibility`，搭载关系发布同样必须关联已核验来源。
 
+生产目录迁移顺序为 `202609100001_v041_catalog_review_and_admin.sql` → `202609160001_v041_official_catalog_evidence.sql` → `202609100002_v041_public_catalog_views.sql`。中间迁移只发布官方页面直接支持的产品/方案版本、车型和搭载关系；无精确 OTA 或逐配置原文的记录继续保持草稿。
+
 投稿的版本、车型配置和搭载关系必须同时通过公开目录条件；仅因版本和车型属于同一系统，不能绕过搭载关系核验。

@@ -87,27 +87,28 @@
 - v0.4.1 增加 `system_vehicle_compatibility` 搭载关系、来源优先级/冲突备注/核验人字段和官方入口来源种子；官方入口登记不等于具体版本已核验，未补充原文证据的记录继续保持草稿。
 - v0.4.1 增加管理员邮箱密码/Magic Link 登录入口；管理员由 Supabase JWT `app_metadata.role=admin` 唯一判断，普通用户即使登录也不能进入审核队列。
 - v0.4.1 管理后台默认显示 `unverified` 行程，审核队列展示版本、车型配置、道路、人工干预和证据数量；管理员查看图片只能通过 300 秒私有签名链接，公开响应不返回 Storage 路径。
-- v0.4.1 新增迁移 `202609100001_v041_catalog_review_and_admin.sql`、数据政策 `docs/CATALOG_DATA_POLICY.md` 和 Release Note；迁移需在 Supabase SQL Editor 执行后才能启用搭载关系和管理员证据读取策略。
+- v0.4.1 新增迁移 `202609100001_v041_catalog_review_and_admin.sql`、`202609160001_v041_official_catalog_evidence.sql`、数据政策 `docs/CATALOG_DATA_POLICY.md` 和 Release Note；迁移需在 Supabase SQL Editor 按顺序执行后才能启用搭载关系和管理员证据读取策略。
 - 当前仍需完成：在 Supabase 设置管理员账号的 `app_metadata.role=admin`，执行 v0.4.1 迁移，逐条补充真实 OTA/车型公告来源，并重新部署 ECS API 与静态前端。当前公网仍为 HTTP，登录和证据查看应待 HTTPS 配置后使用。
 - v0.4.1 当前代码状态：投稿表单从云端已核验目录读取系统、车辆品牌、车型配置和版本；云端公开系统/版本/车型接口要求目录状态为 `reviewed/published`、存在已核验来源，投稿接口再次校验版本与车型属于同一系统。
-- v0.4.1 管理员目录维护支持关联来源证据后再发布系统、版本和车型；管理员审核队列可请求 300 秒私有证据签名链接，公开接口仍不返回 Storage 原始路径。生产迁移执行顺序为 `202609100001_v041_catalog_review_and_admin.sql` → `202609100002_v041_public_catalog_views.sql`。
+- v0.4.1 管理员目录维护支持关联来源证据后再发布系统、版本和车型；管理员审核队列可请求 300 秒私有证据签名链接，公开接口仍不返回 Storage 原始路径。生产迁移执行顺序为 `202609100001_v041_catalog_review_and_admin.sql` → `202609160001_v041_official_catalog_evidence.sql` → `202609100002_v041_public_catalog_views.sql`。
 - v0.4.1 本地验证已通过 `npm run build`、`npm run api:check`、`git diff --check`；生产 Supabase 迁移仍需在 SQL Editor 执行后才能完成线上目录与审核闭环。
 - v0.4.1 研究记录保存在 `docs/CATALOG_RESEARCH_V041.md`；官方入口只能证明系统/产品/车型存在，不能自动证明具体 OTA 版本、发布日期、硬件或配置，缺少精确原文的记录必须保持草稿。
-- 线上诊断：若 `/api/catalog/vehicles` 返回“车型目录尚未完成 v0.4.1 数据库迁移”，说明生产库尚未增加 `vehicle_brand` 字段，需先执行两份 v0.4.1 迁移。
+- 线上诊断：若 `/api/catalog/vehicles` 返回“车型目录尚未完成 v0.4.1 数据库迁移”，说明生产库尚未增加 `vehicle_brand` 字段，需先执行三份 v0.4.1 迁移。
 - 迁移后验收命令为 `npm run verify:production`；它只读取 API 和 Supabase schema，不输出密钥，全部 PASS 后才能继续管理员和投稿闭环验收。
 - 当前验收证据：`vehicle_models.vehicle_brand` 和 `system_vehicle_compatibility` 在生产 Supabase 中不存在；来源表和 `public_release_stats` 存在，API 健康及公开行程隐私检查通过。目标仍未完成。
 - 2026-09-11 复核确认 ECS 的 systemd API 工作目录为 `/opt/autopilotlog-api`，线上 `/api/health` 返回 200，Nginx 与 API 均 active；部署文档更新命令已同步该实际路径。Supabase v0.4.1 迁移仍待执行。
 - v0.4.1 迁移补强数据库级公开边界：移除旧版系统、版本和车型的公开宽松 RLS，仅允许关联已核验来源且状态合格的记录被 anon/authenticated 读取；同时初始化车型搭载关系草稿，管理员可在后台关联来源并发布。
-- 2026-09-12 线上复核：最新前端/API 已部署到 ECS，`/api/health` 返回 200，公开行程为空状态和禁止字段边界通过；生产 Supabase 仍缺少 `vehicle_models.vehicle_brand` 与 `system_vehicle_compatibility`，因为 SQL Editor 会话当前不可用，v0.4.1 迁移和管理员审核闭环仍未完成。恢复登录后必须依次执行 `202609100001_v041_catalog_review_and_admin.sql`、`202609100002_v041_public_catalog_views.sql`，再运行 `npm run verify:production`。
+- 2026-09-12 线上复核：最新前端/API 已部署到 ECS，`/api/health` 返回 200，公开行程为空状态和禁止字段边界通过；生产 Supabase 仍缺少 `vehicle_models.vehicle_brand` 与 `system_vehicle_compatibility`，因为 SQL Editor 会话当前不可用，v0.4.1 迁移和管理员审核闭环仍未完成。恢复登录后必须依次执行 `202609100001_v041_catalog_review_and_admin.sql`、`202609160001_v041_official_catalog_evidence.sql`、`202609100002_v041_public_catalog_views.sql`，再运行 `npm run verify:production`。
 - v0.4.1 公开统计视图额外排除 `trips.is_test=true`，测试投稿即使被误发布也不会污染公开统计；该修正已写入 `202609100002_v041_public_catalog_views.sql`，生产迁移需重新执行该文件中的视图定义。
-- v0.4.1 公开车型接口、投稿校验和 RLS 现在统一要求已核验/已发布的系统—车型搭载关系；公开行程详情和事件摘要也排除 `is_test=true`。生产需依次执行两份 v0.4.1 迁移。
+- v0.4.1 公开车型接口、投稿校验和 RLS 现在统一要求已核验/已发布的系统—车型搭载关系；公开行程详情和事件摘要也排除 `is_test=true`。生产需依次执行三份 v0.4.1 迁移。
 - v0.4.1 公开行程与版本统计视图同样要求存在已核验/已发布搭载关系；管理员误发布的旧关联不会进入公开统计。该规则需通过重新执行 `202609100002_v041_public_catalog_views.sql` 生效。
-- 2026-09-13 已将搭载关系边界同步到 API 契约、Supabase 配置、字典政策和生产验收脚本；本地 `npm run build`、`npm run api:check`、`git diff --check` 通过，生产验收仍因两份 v0.4.1 迁移未执行而失败。
+- 2026-09-13 已将搭载关系边界同步到 API 契约、Supabase 配置、字典政策和生产验收脚本；本地 `npm run build`、`npm run api:check`、`git diff --check` 通过，生产验收仍因 v0.4.1 三份迁移未执行而失败。
 - 2026-09-13 官方来源复核补充：华为新闻页直接证明 ADS 4 发布，小鹏 P7/G6 官方页直接证明第二代 VLA/图灵芯片，小米 SU7 官方页直接证明 Xiaomi HAD/700TOPS，文远知行官网直接列出 WRD 3.0 ADAS；具体 OTA 小版本和逐配置搭载关系仍不得发布。
 - v0.4.1 修正华为 ADS 主来源 URL 条件，并使公开事件摘要与公开行程、统计视图使用同一搭载关系过滤。
 - v0.4.1 搭载关系的公开 RLS、API 和视图均要求 `source_id` 指向已核验来源，同时公开行程/事件视图检查系统、版本和车型的目录状态与来源。
 - v0.4.1 版本统计将搭载关系过滤放在行程左连接条件中，避免不合格行程导致整个版本从公开目录消失；无合格样本的版本保留为 0 统计。
 - v0.4.1 迁移会将缺少精确来源证据的示例 OTA 记录降为 `unverified`/`draft`；生产目录不再把旧种子里的 `verified` 状态当作人工核验事实。
-- v0.4.1 公开搭载关系 RLS 与公开行程视图同时校验系统、版本、车型及其来源状态，草稿目录不能通过兼容关系间接进入公开接口；生产仍待 SQL Editor 执行两份 v0.4.1 迁移。
+- v0.4.1 公开搭载关系 RLS 与公开行程视图同时校验系统、版本、车型及其来源状态，草稿目录不能通过兼容关系间接进入公开接口；生产仍待 SQL Editor 执行三份 v0.4.1 迁移。
 - v0.4.1 目录 RLS 跨表判断使用固定 search_path 的只读 SECURITY DEFINER 函数，避免 vehicle_models 与 system_vehicle_compatibility 策略互相递归；函数只返回公开状态布尔值。
+- v0.4.1 官方证据迁移只发布人工打开页面直接支持的产品/方案版本、车型与搭载关系；缺少精确 OTA 或逐配置原文的旧样本继续保持 `unverified/draft`。
 - v0.4.2 修复阿里云 ECS 静态资源目录权限导致的线上白屏：Nginx worker 用户必须能遍历 `/var/www/autopilotlog/assets` 并读取其中的 JS/CSS；每次上传 `dist/` 后需将目录设为 `755`、文件设为 `644`，再执行 Nginx 配置检查和 reload。
