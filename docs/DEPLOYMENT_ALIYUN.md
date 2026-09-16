@@ -22,8 +22,10 @@
 ```powershell
 npm run build
 scp -r -i C:\Users\ADAS_TEST_PC\Desktop\codex.pem dist\* root@8.138.251.200:/var/www/autopilotlog/
-ssh -i C:\Users\ADAS_TEST_PC\Desktop\codex.pem root@8.138.251.200 "nginx -t && systemctl reload nginx"
+ssh -i C:\Users\ADAS_TEST_PC\Desktop\codex.pem root@8.138.251.200 "find /var/www/autopilotlog -type d -exec chmod 755 {} + && find /var/www/autopilotlog -type f -exec chmod 644 {} + && nginx -t && systemctl reload nginx"
 ```
+
+静态资源目录必须允许 Nginx worker 用户遍历。上传工具可能会把新建的 `assets/` 目录保留为仅 root 可访问的 `700`，此时首页可以返回但 JS/CSS 会出现 `403/404`，浏览器表现为白屏。因此每次上传后都要执行上面的 `find ... chmod` 权限修复，并检查首页引用的 JS/CSS 均返回 `200`。
 
 更新后检查：
 
