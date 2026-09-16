@@ -23,6 +23,13 @@ left join public.evidence ev on ev.trip_id = t.id
 where t.verification_status <> 'rejected'
   and t.published_at is not null
   and t.is_test = false
+  and r.verification_status = 'verified'
+  and r.catalog_status in ('reviewed', 'published')
+  and s.catalog_status in ('reviewed', 'published')
+  and vm.catalog_status in ('reviewed', 'published')
+  and exists (select 1 from public.catalog_sources rs where rs.id = r.primary_source_id and rs.verification_status in ('reviewed', 'published'))
+  and exists (select 1 from public.catalog_sources ss where ss.id = s.primary_source_id and ss.verification_status in ('reviewed', 'published'))
+  and exists (select 1 from public.catalog_sources vs where vs.id = vm.primary_source_id and vs.verification_status in ('reviewed', 'published'))
   and exists (
     select 1 from public.system_vehicle_compatibility c
     where c.system_id = r.system_id

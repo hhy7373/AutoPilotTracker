@@ -31,6 +31,14 @@ async function check(label, fn) {
   }
 }
 
+function schemaMigrationHint(error) {
+  const message = String(error?.message || error || '');
+  if (/vehicle_brand|system_vehicle_compatibility|schema cache/i.test(message)) {
+    return '生产库尚未执行 v0.4.1 迁移 202609100001/202609100002';
+  }
+  return message;
+}
+
 await check('API health', async () => {
   const { response, body } = await request(`${apiBase}/health`);
   if (!response.ok || body?.ok !== true) throw new Error(`HTTP ${response.status}`);
@@ -77,7 +85,7 @@ if (supabaseUrl && anonKey) {
   ]) {
     await check(`Supabase ${label}`, async () => {
       const { response, body } = await request(`${supabaseUrl}/rest/v1/${path}`, { headers });
-      if (!response.ok) throw new Error(body?.message || body?.error || `HTTP ${response.status}`);
+    if (!response.ok) throw new Error(schemaMigrationHint(body?.message || body?.error || `HTTP ${response.status}`));
       return 'schema available';
     });
   }

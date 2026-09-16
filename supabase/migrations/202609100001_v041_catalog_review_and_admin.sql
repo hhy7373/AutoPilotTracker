@@ -85,6 +85,28 @@ create policy "public can read reviewed compatibilities" on public.system_vehicl
       where cs.id = system_vehicle_compatibility.source_id
         and cs.verification_status in ('reviewed', 'published')
     )
+    and exists (
+      select 1 from public.systems s
+      where s.id = system_vehicle_compatibility.system_id
+        and s.catalog_status in ('reviewed', 'published')
+        and s.primary_source_id is not null
+        and exists (
+          select 1 from public.catalog_sources cs
+          where cs.id = s.primary_source_id
+            and cs.verification_status in ('reviewed', 'published')
+        )
+    )
+    and exists (
+      select 1 from public.vehicle_models vm
+      where vm.id = system_vehicle_compatibility.vehicle_model_id
+        and vm.catalog_status in ('reviewed', 'published')
+        and vm.primary_source_id is not null
+        and exists (
+          select 1 from public.catalog_sources cs
+          where cs.id = vm.primary_source_id
+            and cs.verification_status in ('reviewed', 'published')
+        )
+    )
   );
 drop policy if exists "admins manage compatibilities" on public.system_vehicle_compatibility;
 create policy "admins manage compatibilities" on public.system_vehicle_compatibility
