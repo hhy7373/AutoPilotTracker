@@ -211,8 +211,11 @@ create index if not exists system_vehicle_compatibility_status_idx
 -- The official landing pages prove the system/provider exists, but do not by
 -- themselves prove a specific release date, hardware mapping, or trim.
 update public.releases
-set catalog_status = 'draft', verification_note = coalesce(verification_note, '待补充具体官方 OTA/公告 URL、发布日期与硬件适配原文。')
-where primary_source_id is null;
+set catalog_status = 'draft',
+    verification_status = 'unverified',
+    verification_note = coalesce(verification_note, '待补充具体官方 OTA/公告 URL、发布日期与硬件适配原文。')
+where primary_source_id is null
+   or verification_note like '%待补充具体官方 OTA%';
 
 update public.vehicle_models
 set catalog_status = 'draft', verification_note = coalesce(verification_note, '待补充具体官方车型/配置 URL 与智驾硬件适配原文。')

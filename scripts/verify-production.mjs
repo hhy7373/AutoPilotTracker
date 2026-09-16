@@ -38,7 +38,7 @@ await check('API health', async () => {
 });
 
 function assertPublicShape(value) {
-  const forbidden = new Set(['author_id', 'owner_id', 'vin_hash', 'storage_path', 'email']);
+  const forbidden = new Set(['author_id', 'owner_id', 'vin_hash', 'storage_path', 'email', 'description', 'driver_action']);
   const stack = [value];
   while (stack.length) {
     const current = stack.pop();
@@ -58,6 +58,13 @@ for (const [label, path] of [['公开车型目录', '/catalog/vehicles'], ['公�
     return `${body.data.length} records`;
   });
 }
+
+await check('公开事件摘要隐私字段', async () => {
+  const { response, body } = await request(`${apiBase}/trips`);
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  assertPublicShape(body);
+  return '公开行程响应未包含事件描述或驾驶员操作字段';
+});
 
 if (supabaseUrl && anonKey) {
   const headers = { apikey: anonKey, Authorization: `Bearer ${anonKey}` };
