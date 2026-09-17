@@ -33,6 +33,8 @@ ssh -i C:\Users\ADAS_TEST_PC\Desktop\codex.pem root@8.138.251.200 "find /var/www
 Invoke-WebRequest http://8.138.251.200/ -UseBasicParsing
 ```
 
+API 健康检查中的 `catalogMigration` 应在三份 v0.4.1 SQL 执行后从 `pending` 变为 `ready`；迁移前保持 `pending` 是预期行为，不要据此把空目录当作已完成。
+
 生产验收可执行：
 
 ```powershell

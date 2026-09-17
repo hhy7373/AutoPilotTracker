@@ -7,6 +7,8 @@
 - 匿名用户通过 Supabase Anonymous Sign-Ins 获取 token；服务端从 token 获取用户 ID，不接受客户端传入作者 ID。
 - 管理员由 Supabase JWT `app_metadata.role=admin` 判断。
 
+`GET /api/health` 返回 `catalogMigration: ready|pending|unknown`。该字段只表示 v0.4.1 必需的车型字段和搭载关系表是否可读取，不返回数据库错误详情；生产验收要求为 `ready`。
+
 ## 目录与公开数据
 
 ```text

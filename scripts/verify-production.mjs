@@ -42,7 +42,8 @@ function schemaMigrationHint(error) {
 await check('API health', async () => {
   const { response, body } = await request(`${apiBase}/health`);
   if (!response.ok || body?.ok !== true) throw new Error(`HTTP ${response.status}`);
-  return 'service healthy';
+  if (body.catalogMigration === 'pending') throw new Error('API 健康但生产库尚未执行 v0.4.1 迁移');
+  return `service healthy; catalogMigration=${body.catalogMigration || 'unknown'}`;
 });
 
 function assertPublicShape(value) {

@@ -76,7 +76,22 @@ function parseTripBody(body) {
   return { value: { ...body, vin: vinResult.normalized, vinHash: vinFingerprint(vinResult.normalized), vinLast6: vinResult.normalized.slice(-6), totalKm: km } };
 }
 
-app.get('/api/health', async () => ({ ok: true, service: 'autopilotlog-api', authConfigured: Boolean(supabase) }));
+async function catalogMigrationStatus() {
+  if (!supabase) return 'unknown';
+  const [vehicleColumn, compatibilityTable] = await Promise.all([
+    supabase.from('vehicle_models').select('vehicle_brand').limit(1),
+    supabase.from('system_vehicle_compatibility').select('id').limit(1)
+  ]);
+  if (vehicleColumn.error || compatibilityTable.error) return 'pending';
+  return 'ready';
+}
+
+app.get('/api/health', async () => ({
+  ok: true,
+  service: 'autopilotlog-api',
+  authConfigured: Boolean(supabase),
+  catalogMigration: await catalogMigrationStatus()
+}));
 
 app.get('/api/catalog/providers', async (_request, reply) => {
   if (!supabase) return reply.code(503).send({ error: '数据服务未配置。' });
