@@ -114,4 +114,5 @@
 - v0.4.1 官方证据迁移只发布人工打开页面直接支持的产品/方案版本、车型与搭载关系；缺少精确 OTA 或逐配置原文的旧样本继续保持 `unverified/draft`。
 - API `/api/health` 增加 `catalogMigration=ready|pending|unknown`，用于识别 v0.4.1 的 `vehicle_brand` 字段和搭载关系表是否已在生产库就绪；迁移前返回 `pending` 是预期状态。
 - v0.4.1 管理员搭载关系接口、公开 RLS 和公开视图均校验车型/版本与关系中的 `system_id` 一致，拒绝跨系统误关联。
+- v0.4.1 版本统计视图同样要求车型主来源处于 `reviewed/published`，与公开行程和事件摘要保持一致。
 - v0.4.2 修复阿里云 ECS 静态资源目录权限导致的线上白屏：Nginx worker 用户必须能遍历 `/var/www/autopilotlog/assets` 并读取其中的 JS/CSS；每次上传 `dist/` 后需将目录设为 `755`、文件设为 `644`，再执行 Nginx 配置检查和 reload。

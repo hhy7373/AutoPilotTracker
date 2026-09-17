@@ -48,6 +48,11 @@ where t.verification_status <> 'rejected'
         where vm2.id = t.vehicle_model_id
           and vm2.catalog_status in ('reviewed', 'published')
           and vm2.primary_source_id is not null
+          and exists (
+            select 1 from public.catalog_sources vcs
+            where vcs.id = vm2.primary_source_id
+              and vcs.verification_status in ('reviewed', 'published')
+          )
       )
   )
 group by t.id, s.brand, s.name, r.version, r.hardware, vm.name, vm.trim_name;
