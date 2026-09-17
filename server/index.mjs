@@ -422,6 +422,19 @@ app.patch('/api/admin/catalog/:type/:id', { preHandler: authenticate }, async (r
     const source = await db.from('catalog_sources').select('verification_status').eq('id', changes.source_id).maybeSingle();
     if (source.error || !['reviewed', 'published'].includes(source.data?.verification_status)) return reply.code(400).send({ error: '搭载关系的关联来源尚未核验，不能发布。' });
   }
+  if (request.params.type === 'compatibilities') {
+    const current = await db.from(table).select('system_id, vehicle_model_id, release_id').eq('id', request.params.id).maybeSingle();
+    if (current.error || !current.data) return reply.code(404).send({ error: '搭载关系不存在。' });
+    const systemId = changes.system_id || current.data.system_id;
+    const vehicleModelId = changes.vehicle_model_id || current.data.vehicle_model_id;
+    const releaseId = changes.release_id || current.data.release_id;
+    const [vehicle, release] = await Promise.all([
+      db.from('vehicle_models').select('system_id').eq('id', vehicleModelId).maybeSingle(),
+      releaseId ? db.from('releases').select('system_id').eq('id', releaseId).maybeSingle() : Promise.resolve({ data: null, error: null })
+    ]);
+    if (vehicle.error || !vehicle.data || vehicle.data.system_id !== systemId) return reply.code(400).send({ error: '车型不属于所选智驾系统，不能保存搭载关系。' });
+    if (release.error || (release.data && release.data.system_id !== systemId)) return reply.code(400).send({ error: '版本不属于所选智驾系统，不能保存搭载关系。' });
+  }
   const { data: before } = await db.from(table).select('*').eq('id', request.params.id).maybeSingle();
   const { data, error } = await db.from(table).update(changes).eq('id', request.params.id).select('*').single();
   if (error) return reply.code(400).send({ error: '目录更新失败。' });

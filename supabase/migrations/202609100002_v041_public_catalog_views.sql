@@ -34,6 +34,7 @@ where t.verification_status <> 'rejected'
     select 1 from public.system_vehicle_compatibility c
     where c.system_id = r.system_id
       and c.vehicle_model_id = t.vehicle_model_id
+      and exists (select 1 from public.vehicle_models vmc where vmc.id = c.vehicle_model_id and vmc.system_id = c.system_id)
       and (c.release_id = t.release_id or c.release_id is null)
       and c.verification_status in ('reviewed', 'published')
       and c.source_id is not null
@@ -75,6 +76,7 @@ where t.verification_status <> 'rejected'
     select 1 from public.system_vehicle_compatibility c
     where c.system_id = r.system_id
       and c.vehicle_model_id = t.vehicle_model_id
+      and exists (select 1 from public.vehicle_models vmc where vmc.id = c.vehicle_model_id and vmc.system_id = c.system_id)
       and (c.release_id = t.release_id or c.release_id is null)
       and c.verification_status in ('reviewed', 'published')
       and c.source_id is not null
@@ -117,6 +119,7 @@ left join public.trips t on t.release_id = r.id
     select 1 from public.system_vehicle_compatibility c
     where c.system_id = r.system_id
       and c.vehicle_model_id = t.vehicle_model_id
+      and exists (select 1 from public.vehicle_models vmc where vmc.id = c.vehicle_model_id and vmc.system_id = c.system_id)
       and (c.release_id = t.release_id or c.release_id is null)
       and c.verification_status in ('reviewed', 'published')
       and c.source_id is not null

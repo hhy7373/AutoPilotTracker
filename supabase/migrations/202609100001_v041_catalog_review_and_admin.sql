@@ -100,6 +100,7 @@ as $$
     select 1 from public.system_vehicle_compatibility c
     where c.system_id = p_system_id
       and c.vehicle_model_id = p_vehicle_model_id
+      and exists (select 1 from public.vehicle_models vm where vm.id = c.vehicle_model_id and vm.system_id = c.system_id)
       and c.verification_status in ('reviewed', 'published')
       and public.catalog_source_is_public(c.source_id)
       and (c.release_id is null or public.catalog_release_is_public(c.release_id))
@@ -120,6 +121,7 @@ as $$
       select 1 from public.system_vehicle_compatibility c
       where c.system_id = p_system_id
         and c.vehicle_model_id = p_vehicle_model_id
+        and exists (select 1 from public.vehicle_models vm where vm.id = c.vehicle_model_id and vm.system_id = c.system_id)
         and (c.release_id = p_release_id or c.release_id is null)
         and c.verification_status in ('reviewed', 'published')
         and public.catalog_source_is_public(c.source_id)
